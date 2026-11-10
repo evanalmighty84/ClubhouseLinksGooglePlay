@@ -75,7 +75,10 @@ object ClubhouseApi {
             val status = conn.responseCode
             val data = (if (status in 200..299) conn.inputStream else conn.errorStream)
                 ?.bufferedReader()?.use { it.readText() }.orEmpty()
-            val body = try { JSONObject(data) } catch (_: Exception) { JSONObject().put("error", "Unexpected server response") }
+            val body = try { JSONObject(data) } catch (_: Exception) {
+                try { JSONObject().put("events", JSONArray(data)) }
+                catch (_: Exception) { JSONObject().put("error", "Unexpected server response") }
+            }
             if (status !in 200..299) throw ApiException(status, body.optString("error", body.optString("message", "Request failed: $status")))
             if (body.optBoolean("success", true) == false) throw ApiException(status, body.optString("error", "Request unsuccessful"))
             body
