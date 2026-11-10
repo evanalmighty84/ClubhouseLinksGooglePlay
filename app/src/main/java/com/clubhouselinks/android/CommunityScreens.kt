@@ -124,8 +124,8 @@ fun RequestsScreen(session: AccountSession, navigate: (String)->Unit) {
         ContentColumn {
             Text("Service requests",style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold)
             if(session.isResident) {
-                InfoCard("Need a contractor?","Browse the vendor directory and describe your project.","Browse vendors"){navigate("Services")}
-                InfoCard("Request history","The iOS resident request-history API requires a separate contract audit. Android avoids displaying or guessing another resident's requests until authenticated access is available.")
+                InfoCard("Need a contractor?","Browse your neighborhood vendor directory and describe your project.","Browse vendors"){navigate("Services")}
+                ResidentRequestHistory(session)
             } else InfoCard("Sign in","Please verify your account to send service requests.","Sign in"){navigate("Account")}
         }
     }
