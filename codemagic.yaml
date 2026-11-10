@@ -1,0 +1,35 @@
+workflows:
+  clubhouse-links-google-play-debug:
+    name: Clubhouse Links Android - QA APK
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      java: 17
+    scripts:
+      - name: Generate Gradle wrapper if absent
+        script: |
+          if [ ! -f gradlew ]; then gradle wrapper --gradle-version 8.10.2; fi
+          chmod +x gradlew
+      - name: Build debug APK
+        script: |
+          ./gradlew --no-daemon clean assembleDebug
+    artifacts:
+      - app/build/outputs/apk/debug/*.apk
+  clubhouse-links-google-play-release:
+    name: Clubhouse Links Android - Unsigned AAB (signing required)
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      java: 17
+    scripts:
+      - name: Generate Gradle wrapper if absent
+        script: |
+          if [ ! -f gradlew ]; then gradle wrapper --gradle-version 8.10.2; fi
+          chmod +x gradlew
+      - name: Build release AAB
+        script: |
+          ./gradlew --no-daemon bundleRelease
+    artifacts:
+      - app/build/outputs/bundle/release/*.aab
+# Release publishing is intentionally NOT automated without Android app-signing,
+# Google Play Console, Firebase and authenticated backend security in place.
