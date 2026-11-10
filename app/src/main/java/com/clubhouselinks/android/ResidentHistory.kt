@@ -29,7 +29,7 @@ fun ResidentRequestHistory(session: AccountSession) {
     }
     LaunchedEffect(session.residentId) { if(session.isResident)reload() }
     Text("My service requests",style=MaterialTheme.typography.titleLarge)
-    OutlinedButton(onClick={reload},enabled=!busy) { Text(if(busy)"Refreshing…" else "Refresh history") }
+    OutlinedButton(onClick={ reload() },enabled=!busy) { Text(if(busy)"Refreshing…" else "Refresh history") }
     if(error.isNotBlank()) Text(error,color=MaterialTheme.colorScheme.error)
     if(!busy && error.isBlank() && items.isEmpty()) Text("No requests on file.")
     items.forEach { request ->
