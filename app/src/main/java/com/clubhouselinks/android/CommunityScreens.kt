@@ -37,7 +37,7 @@ fun EventsScreen(session: AccountSession, navigate: (String)->Unit) {
         Text("Stay informed about events and activities near your community.")
         if(!session.isResident) InfoCard("Sign in to see events","Event listings are tied to your verified neighborhood account.","Sign in"){ navigate("Account") }
         else {
-            Button(onClick={ { refresh() } },enabled=!loading){ Text(if(loading)"Refreshing…" else "Refresh events") }
+            Button(onClick={ refresh() },enabled=!loading){ Text(if(loading)"Refreshing…" else "Refresh events") }
             if(error.isNotBlank())Text(error,color=MaterialTheme.colorScheme.error)
             if(!loading && error.isBlank() && events.isEmpty()) Text("No community events are listed for this account.")
             events.forEach { item->
@@ -80,7 +80,7 @@ fun ServicesScreen(session: AccountSession, navigate: (String)->Unit) {
         Text("Find participating vendors and request help in your community.")
         if(!session.isResident) InfoCard("Join your community","Verify your resident account to see neighborhood providers and submit service requests.","Sign in"){navigate("Account")}
         else {
-            OutlinedButton(onClick={ { refresh() } },enabled=!busy){ Text(if(busy)"Loading…" else "Refresh directory") }
+            OutlinedButton(onClick={ refresh() },enabled=!busy){ Text(if(busy)"Loading…" else "Refresh directory") }
             if(error.isNotBlank()) Text(error,color=MaterialTheme.colorScheme.error)
             if(!busy && error.isBlank() && vendors.isEmpty()) Text("No providers found for your neighborhood.")
             vendors.forEach { vendor->
