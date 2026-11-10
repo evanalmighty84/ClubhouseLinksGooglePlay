@@ -2,13 +2,16 @@ workflows:
   clubhouse-links-google-play-debug:
     name: Clubhouse Links Android - QA APK
     max_build_duration: 60
-    instance_type: linux_x2
+    instance_type: mac_mini_m2
     environment:
       java: 17
     scripts:
       - name: Generate Gradle wrapper if absent
         script: |
-          if [ ! -f gradlew ]; then gradle wrapper --gradle-version 8.10.2; fi
+          if [ ! -f gradlew ]; then
+            if ! command -v gradle >/dev/null 2>&1; then brew install gradle; fi
+            gradle wrapper --gradle-version 8.10.2
+          fi
           chmod +x gradlew
       - name: Build debug APK
         script: |
@@ -18,13 +21,16 @@ workflows:
   clubhouse-links-google-play-release:
     name: Clubhouse Links Android - Unsigned AAB (signing required)
     max_build_duration: 60
-    instance_type: linux_x2
+    instance_type: mac_mini_m2
     environment:
       java: 17
     scripts:
       - name: Generate Gradle wrapper if absent
         script: |
-          if [ ! -f gradlew ]; then gradle wrapper --gradle-version 8.10.2; fi
+          if [ ! -f gradlew ]; then
+            if ! command -v gradle >/dev/null 2>&1; then brew install gradle; fi
+            gradle wrapper --gradle-version 8.10.2
+          fi
           chmod +x gradlew
       - name: Build release AAB
         script: |
