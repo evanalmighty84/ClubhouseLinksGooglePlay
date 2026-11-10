@@ -37,7 +37,7 @@ fun ProfileDetails(session: AccountSession) {
     }
     LaunchedEffect(session.accountType,session.residentId,session.vendorId){refresh()}
     Text("Profile details",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
-    OutlinedButton(onClick={refresh},enabled=!busy){Text(if(busy)"Loading…" else "Refresh profile")}
+    OutlinedButton(onClick={ refresh() },enabled=!busy){Text(if(busy)"Loading…" else "Refresh profile")}
     if(error.isNotBlank()) Text(error,color=MaterialTheme.colorScheme.error)
     data?.let{ p ->
         val rows=if(session.isVendor) listOf("company_name","category","contact_name","email","website","description")
