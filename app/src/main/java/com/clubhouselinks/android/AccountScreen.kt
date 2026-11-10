@@ -60,7 +60,7 @@ fun AccountScreen(session: AccountSession, onLogin: (AccountSession) -> Unit, on
         OutlinedTextField(value=code,onValueChange={code=it.filter(Char::isDigit).take(6)},label={Text("6-digit verification code")},modifier=Modifier.fillMaxWidth(),singleLine=true,keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number))
         Button(enabled=validPhone && code.length==6 && !busy, onClick={launchAction {
             val response=ClubhouseApi.checkVerification(phone, code)
-            if(response.optBoolean("success",false) || response.optBoolean("verified",false)){
+            if(response.optBoolean("success",false) && response.optBoolean("verified",false)){
                 verified=true; verifiedFor=phone; message="Phone verified."
             } else message=response.optString("message", "Verification was not accepted")
         }}) { Text("Verify phone") }
