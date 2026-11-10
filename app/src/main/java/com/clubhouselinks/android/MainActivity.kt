@@ -91,6 +91,7 @@ private fun ClubhouseNavigation(
                 "Events" -> EventsScreen(session, onPage)
                 "Services" -> ServicesScreen(session, onPage)
                 "Requests" -> RequestsScreen(session, onPage)
+                "Street Fair" -> StreetFairScreen(session, onPage)
                 else -> HomeScreen(session, onPage)
             }
         }
@@ -123,6 +124,7 @@ fun HomeScreen(session: AccountSession, navigate: (String) -> Unit) {
         } else {
             InfoCard("Hello, ${session.displayName.ifBlank { "neighbor" }}", if(session.isVendor) "Vendor dashboard" else session.neighborhoodName.ifBlank { "Resident account" })
         }
+        InfoCard("Neighborhood Street Fair", "See community experiences, food trucks, and participating local businesses.", "Explore Street Fair") { navigate("Street Fair") }
         InfoCard("Community events", "See neighborhood gatherings, HOA events and upcoming activities.", "View events") { navigate("Events") }
         InfoCard("Find a local provider", "Browse neighborhood vendors and request a quote or appointment.", "Browse services") { navigate("Services") }
         InfoCard(if(session.isVendor) "Service requests" else "My requests", "Check requests and their progress.", "Open inbox") { navigate("Requests") }
