@@ -23,6 +23,7 @@ fun AccountScreen(session: AccountSession, onLogin: (AccountSession) -> Unit, on
             Text("My account", style = MaterialTheme.typography.headlineMedium)
             InfoCard(session.displayName, if(session.isVendor) "Vendor account" else "Resident · ${session.neighborhoodName}")
             Text("Account data is provided by the existing Clubhouse Links backend.")
+            ProfileDetails(session)
             OutlinedButton(onClick = onSignOut) { Text("Sign out on this device") }
         }
         return
