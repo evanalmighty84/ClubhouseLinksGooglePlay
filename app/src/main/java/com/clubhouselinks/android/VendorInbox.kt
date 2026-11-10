@@ -35,7 +35,7 @@ fun VendorInbox(session: AccountSession) {
     ContentColumn{
         Text("Vendor service requests",style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold)
         Text(session.displayName)
-        OutlinedButton(onClick={ { refresh() } },enabled=!loading){Text(if(loading)"Refreshing…" else "Refresh requests")}
+        OutlinedButton(onClick={ refresh() },enabled=!loading){Text(if(loading)"Refreshing…" else "Refresh requests")}
         if(error.isNotBlank())Text(error,color=MaterialTheme.colorScheme.error)
         Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
             listOf("All","New","In progress","Completed").forEach {
