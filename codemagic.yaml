@@ -1,4 +1,52 @@
 workflows:
+  clubhouse-links-generate-upload-key:
+    name: Clubhouse Links - Generate Encrypted Android Upload Key (One Time)
+    instance_type: mac_mini_m2
+    max_build_duration: 15
+    environment:
+      java: 17
+      groups:
+        - android_upload_key_bootstrap
+    scripts:
+      - name: Generate keystore and export ONLY an encrypted backup
+        script: |
+          set -eu
+          # Create the two secret variables in Codemagic beforehand. Never print them.
+          : "${UPLOAD_KEYSTORE_PASSWORD:?Missing secret UPLOAD_KEYSTORE_PASSWORD}"
+          : "${UPLOAD_KEY_ARCHIVE_PASSWORD:?Missing secret UPLOAD_KEY_ARCHIVE_PASSWORD}"
+          if [ "${#UPLOAD_KEYSTORE_PASSWORD}" -lt 16 ] || [ "${#UPLOAD_KEY_ARCHIVE_PASSWORD}" -lt 16 ]; then
+            echo "Both secret passwords must have at least 16 characters."
+            exit 1
+          fi
+          if [ "$UPLOAD_KEYSTORE_PASSWORD" = "$UPLOAD_KEY_ARCHIVE_PASSWORD" ]; then
+            echo "Use different keystore and archive passwords."
+            exit 1
+          fi
+          umask 077
+          WORK_DIR="$(mktemp -d)"
+          trap 'rm -rf "$WORK_DIR"' EXIT
+          OUT="$CM_BUILD_DIR/secure-signing-export"
+          mkdir -p "$OUT"
+          # This password will later be entered in Codemagic's Android keystore UI.
+          keytool -genkeypair -noprompt \
+            -keystore "$WORK_DIR/ClubhouseLinksGooglePlay.jks" \
+            -storetype PKCS12 -keyalg RSA -keysize 4096 \
+            -validity 10000 -alias clubhouselinks \
+            -dname "CN=Clubhouse Links, O=Clubhouse Links Corp, C=US" \
+            -storepass "$UPLOAD_KEYSTORE_PASSWORD" \
+            -keypass "$UPLOAD_KEYSTORE_PASSWORD" >/dev/null 2>&1
+          # The ONLY exported artifact is encrypted with a DIFFERENT secret.
+          # The .jks plaintext is never copied to the artifacts directory.
+          openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 \
+            -in "$WORK_DIR/ClubhouseLinksGooglePlay.jks" \
+            -out "$OUT/ClubhouseLinksGooglePlay.jks.enc" \
+            -pass env:UPLOAD_KEY_ARCHIVE_PASSWORD
+          echo "Created encrypted signing key artifact (ClubhouseLinksGooglePlay.jks.enc)."
+          echo "Download it and store BOTH passwords in your password manager."
+          echo "The artifact cannot be used without your separate archive password."
+    artifacts:
+      - secure-signing-export/ClubhouseLinksGooglePlay.jks.enc
+
   clubhouse-links-google-play-debug:
     name: Clubhouse Links Android - QA APK
     max_build_duration: 60
