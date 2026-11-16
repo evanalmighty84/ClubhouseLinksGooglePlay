@@ -59,7 +59,7 @@ workflows:
         script: |
           if [ ! -f gradlew ]; then
             if ! command -v gradle >/dev/null 2>&1; then brew install gradle; fi
-            gradle wrapper --gradle-version 8.10.2
+            gradle wrapper --gradle-version 8.11.1
           fi
           chmod +x gradlew
       - name: Build debug APK
@@ -81,7 +81,7 @@ workflows:
         script: |
           if [ ! -f gradlew ]; then
             if ! command -v gradle >/dev/null 2>&1; then brew install gradle; fi
-            gradle wrapper --gradle-version 8.10.2
+            gradle wrapper --gradle-version 8.11.1
           fi
           chmod +x gradlew
       - name: Check signing identity is available
@@ -93,6 +93,16 @@ workflows:
           : "${CM_KEY_PASSWORD:?Missing key password}"
           test -f "$CM_KEYSTORE_PATH"
           echo "Release signing identity is available; credentials remain hidden."
+      - name: Ensure Android API 36 SDK is installed
+        script: |
+          set -eu
+          if command -v sdkmanager >/dev/null 2>&1; then
+            yes | sdkmanager "platforms;android-36" || true
+          fi
+          test -d "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Library/Android/sdk}}/platforms/android-36" || {
+            echo "Android SDK platform 36 is missing."
+            exit 1
+          }
       - name: Build signed Google Play AAB
         script: |
           set -eu
