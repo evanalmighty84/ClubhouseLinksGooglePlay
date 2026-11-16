@@ -54,7 +54,7 @@ private fun ClubhouseNavigation(
     val tabs = listOf("Home","Events","Services","Requests")
     Scaffold(
         topBar = {
-            Surface(color = ClubhouseNavy) {
+            Surface(color = ClubhouseNavy, modifier = Modifier.statusBarsPadding()) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("CLUBHOUSE LINKS", color = ClubhouseCyan, fontWeight = FontWeight.Black)
