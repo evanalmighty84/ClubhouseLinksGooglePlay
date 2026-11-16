@@ -51,7 +51,8 @@ private fun ClubhouseNavigation(
     onLogin: (AccountSession) -> Unit,
     onSignOut: () -> Unit
 ) {
-    val tabs = if (session.isVendor) listOf("Home","Events","Jobs Submitted","Service Requests")\n    else listOf("Home","Events","Submit Job","Request Service")
+    val tabs = if (session.isVendor) listOf("Home","Events","Jobs Submitted","Service Requests")
+    else listOf("Home","Events","Submit Job","Request Service")
     Scaffold(
         topBar = {
             Surface(color = ClubhouseNavy, modifier = Modifier.statusBarsPadding()) {
@@ -77,8 +78,8 @@ private fun ClubhouseNavigation(
                             Icon(when(tab) {
                                 "Home" -> Icons.Default.Home
                                 "Events" -> Icons.Default.CalendarMonth
-                                "Services" -> Icons.Default.Handyman
-                                else -> Icons.Default.Inbox
+                                "Submit Job", "Jobs Submitted" -> Icons.Default.Send
+                                else -> Icons.Default.Call
                             }, contentDescription = tab)
                         },
                         label = { Text(tab) }
@@ -92,7 +93,11 @@ private fun ClubhouseNavigation(
                 "Home" -> NativeHome(session, onPage)
                 "Account" -> AccountScreen(session, onLogin, onSignOut)
                 "QA Preview" -> if (BuildConfig.DEBUG) QaPreviewScreen(onClose = { onPage("Home") }) else HomeScreen(session, onPage)
-                "Events" -> EventsScreen(session, onPage)\n                "Submit Job" -> SubmitJobScreen(session, onPage)\n                "Jobs Submitted" -> JobsSubmittedScreen(session, onPage)\n                "Request Service" -> RequestsScreen(session, onPage)\n                "Service Requests" -> RequestsScreen(session, onPage)
+                "Events" -> EventsScreen(session, onPage)
+                "Submit Job" -> SubmitJobScreen(session, onPage)
+                "Jobs Submitted" -> JobsSubmittedScreen(session, onPage)
+                "Request Service" -> RequestsScreen(session, onPage)
+                "Service Requests" -> RequestsScreen(session, onPage)
                 "Services" -> ServicesScreen(session, onPage)
                 "Requests" -> RequestsScreen(session, onPage)
                 "Street Fair" -> StreetFairScreen(session, onPage)
