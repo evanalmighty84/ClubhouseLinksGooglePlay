@@ -14,9 +14,32 @@ android {
     versionCode = 1
     versionName = "0.2.0"
   }
+  // Codemagic injects these values from its secured Android signing identity.
+  // No key material or password is stored in this repository.
+  val releaseKeystorePath = System.getenv("CM_KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
+  val releaseStorePassword = System.getenv("CM_KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
+  val releaseKeyAlias = System.getenv("CM_KEY_ALIAS")?.takeIf { it.isNotBlank() }
+  val releaseKeyPassword = System.getenv("CM_KEY_PASSWORD")?.takeIf { it.isNotBlank() }
+  val hasReleaseSigning = listOf(
+    releaseKeystorePath, releaseStorePassword, releaseKeyAlias, releaseKeyPassword
+  ).all { it != null }
+
+  signingConfigs {
+    if (hasReleaseSigning) {
+      create("release") {
+        storeFile = file(releaseKeystorePath!!)
+        storePassword = releaseStorePassword!!
+        keyAlias = releaseKeyAlias!!
+        keyPassword = releaseKeyPassword!!
+      }
+    }
+  }
   buildTypes {
-    release {
+    getByName("release") {
       isMinifyEnabled = false
+      if (hasReleaseSigning) {
+        signingConfig = signingConfigs.getByName("release")
+      }
     }
   }
   compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
