@@ -150,10 +150,10 @@ private fun SignupModeSample() {
 
 @Composable
 private fun PreviewPanel(title: String, subtitle: String, detail: String) {
-    ElevatedCard(
+    Card(
         modifier=Modifier.fillMaxWidth(),
         shape=RoundedCornerShape(18.dp),
-        colors=CardDefaults.elevatedCardColors(containerColor=Color(0xFF222034)),
+        colors=CardDefaults.cardColors(containerColor=Color(0xFF222034)),
         border=BorderStroke(1.dp,PreviewViolet.copy(alpha=0.45f))
     ) {
         Column(Modifier.padding(18.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
