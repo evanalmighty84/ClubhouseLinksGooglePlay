@@ -113,7 +113,7 @@ workflows:
             echo "Android SDK platform 36 is not installed at $SDK_ROOT."
             exit 1
           }
-          printf 'sdk.dir=%s\\n' "$SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
+          printf 'sdk.dir=%s\n' "$SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
           echo "Android SDK platform 36 is installed and configured."
       - name: Build signed Google Play AAB
         script: |
