@@ -57,6 +57,7 @@ object ClubhouseApi {
     suspend fun residentEvents(residentId: Int, boardMember: Boolean = false): JSONObject =
         get(if (boardMember) "hoaBoardMembers/$residentId/events" else "residents/events/$residentId")
     suspend fun residentProfile(residentId: Int) = get("residents/profile/$residentId")
+    suspend fun residentHomeMode(residentId: Int) = get("residents/profile/$residentId/home-mode")
     suspend fun vendorProfile(vendorId: Int) = get("vendors/$vendorId/profile")
     suspend fun residentRequests(residentId: Int) = get("residents/$residentId/service-requests")
     suspend fun residentCompletedProjects(residentId: Int) = get("residents/completed-projects/$residentId")
