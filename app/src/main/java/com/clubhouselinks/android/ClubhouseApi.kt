@@ -22,6 +22,14 @@ object ClubhouseApi {
         post("residents/signup", JSONObject().put("first_name", first).put("last_name", last)
             .put("phone", phone).put("address", address).put("invite_code", invite))
 
+    // Use only after successful SMS verification in the client. Server-side
+    // verification-bound sessions are still required before production.
+    suspend fun residentLookupAfterVerification(phone: String): JSONObject? = try {
+        post("residents/login", JSONObject().put("phone", phone))
+    } catch (e: ApiException) {
+        if (e.status == 404) null else throw e
+    }
+
     suspend fun vendorLookup(phone: String): JSONObject? = try {
         post("vendors/login", JSONObject().put("phone", phone))
     } catch (e: ApiException) { if (e.status == 404) null else throw e }
