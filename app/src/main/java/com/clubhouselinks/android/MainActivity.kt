@@ -51,7 +51,7 @@ private fun ClubhouseNavigation(
     onLogin: (AccountSession) -> Unit,
     onSignOut: () -> Unit
 ) {
-    val tabs = listOf("Home","Events","Services","Requests")
+    val tabs = if (session.isVendor) listOf("Home","Events","Jobs Submitted","Service Requests")\n    else listOf("Home","Events","Submit Job","Request Service")
     Scaffold(
         topBar = {
             Surface(color = ClubhouseNavy, modifier = Modifier.statusBarsPadding()) {
@@ -89,14 +89,14 @@ private fun ClubhouseNavigation(
     ) { inner ->
         Box(Modifier.fillMaxSize().padding(inner)) {
             when(page) {
-                "Home" -> HomeScreen(session, onPage)
+                "Home" -> NativeHome(session, onPage)
                 "Account" -> AccountScreen(session, onLogin, onSignOut)
                 "QA Preview" -> if (BuildConfig.DEBUG) QaPreviewScreen(onClose = { onPage("Home") }) else HomeScreen(session, onPage)
-                "Events" -> EventsScreen(session, onPage)
+                "Events" -> EventsScreen(session, onPage)\n                "Submit Job" -> SubmitJobScreen(session, onPage)\n                "Jobs Submitted" -> JobsSubmittedScreen(session, onPage)\n                "Request Service" -> RequestsScreen(session, onPage)\n                "Service Requests" -> RequestsScreen(session, onPage)
                 "Services" -> ServicesScreen(session, onPage)
                 "Requests" -> RequestsScreen(session, onPage)
                 "Street Fair" -> StreetFairScreen(session, onPage)
-                else -> HomeScreen(session, onPage)
+                else -> NativeHome(session, onPage)
             }
         }
     }
