@@ -6,12 +6,12 @@ plugins {
 
 android {
   namespace = "com.clubhouselinks.android"
-  compileSdk = 35
+  compileSdk = 36
   defaultConfig {
     applicationId = "com.clubhouselinks.android"
     minSdk = 26
-    targetSdk = 35
-    versionCode = 1
+    targetSdk = 36
+    versionCode = 2
     versionName = "0.2.0"
   }
   // Codemagic injects these values from its secured Android signing identity.
