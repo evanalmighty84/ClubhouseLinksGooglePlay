@@ -93,16 +93,28 @@ workflows:
           : "${CM_KEY_PASSWORD:?Missing key password}"
           test -f "$CM_KEYSTORE_PATH"
           echo "Release signing identity is available; credentials remain hidden."
-      - name: Ensure Android API 36 SDK is installed
+      - name: Install and configure Android API 36 SDK
         script: |
           set -eu
-          if command -v sdkmanager >/dev/null 2>&1; then
-            yes | sdkmanager "platforms;android-36" || true
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/share/android-sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="/usr/local/share/android-sdk/cmdline-tools/latest/bin/sdkmanager"
           fi
-          test -d "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Library/Android/sdk}}/platforms/android-36" || {
-            echo "Android SDK platform 36 is missing."
+          if [ ! -x "$SDKMANAGER" ]; then
+            echo "Android sdkmanager was not found in the configured SDK or Codemagic's documented SDK path."
+            exit 1
+          fi
+          if [ ! -d "$SDK_ROOT/platforms/android-36" ]; then
+            echo "Installing Android SDK platform 36..."
+            "$SDKMANAGER" --sdk_root="$SDK_ROOT" "platforms;android-36"
+          fi
+          test -f "$SDK_ROOT/platforms/android-36/android.jar" || {
+            echo "Android SDK platform 36 is not installed at $SDK_ROOT."
             exit 1
           }
+          printf 'sdk.dir=%s\\n' "$SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
+          echo "Android SDK platform 36 is installed and configured."
       - name: Build signed Google Play AAB
         script: |
           set -eu
