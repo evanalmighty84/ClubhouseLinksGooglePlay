@@ -60,6 +60,9 @@ private fun ClubhouseNavigation(
                         Text("CLUBHOUSE LINKS", color = ClubhouseCyan, fontWeight = FontWeight.Black)
                         Text(session.neighborhoodName.ifBlank { if (session.isVendor) session.displayName else "Your neighborhood, connected" }, style = MaterialTheme.typography.labelSmall)
                     }
+                    if (BuildConfig.DEBUG) {
+                        TextButton(onClick = { onPage("QA Preview") }) { Text("Preview") }
+                    }
                     TextButton(onClick = { onPage("Account") }) { Text(if(session.isResident || session.isVendor) "Account" else "Sign in") }
                 }
             }
@@ -88,6 +91,7 @@ private fun ClubhouseNavigation(
             when(page) {
                 "Home" -> HomeScreen(session, onPage)
                 "Account" -> AccountScreen(session, onLogin, onSignOut)
+                "QA Preview" -> if (BuildConfig.DEBUG) QaPreviewScreen(onClose = { onPage("Home") }) else HomeScreen(session, onPage)
                 "Events" -> EventsScreen(session, onPage)
                 "Services" -> ServicesScreen(session, onPage)
                 "Requests" -> RequestsScreen(session, onPage)
