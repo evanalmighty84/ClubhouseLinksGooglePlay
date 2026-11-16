@@ -59,6 +59,7 @@ object ClubhouseApi {
     suspend fun residentProfile(residentId: Int) = get("residents/profile/$residentId")
     suspend fun residentHomeMode(residentId: Int) = get("residents/profile/$residentId/home-mode")
     suspend fun vendorProfile(vendorId: Int) = get("vendors/$vendorId/profile")
+    suspend fun vendorCompletedProjects(vendorId: Int) = get("vendors/$vendorId/completed-projects")
     suspend fun residentRequests(residentId: Int) = get("residents/$residentId/service-requests")
     suspend fun residentCompletedProjects(residentId: Int) = get("residents/completed-projects/$residentId")
 
