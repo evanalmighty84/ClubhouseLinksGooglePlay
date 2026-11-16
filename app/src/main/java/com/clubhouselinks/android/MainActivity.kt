@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 val ClubhouseNavy = Color(0xFF0C1230)
 val ClubhouseCyan = Color(0xFF16C6E0)
@@ -29,10 +30,44 @@ class MainActivity : ComponentActivity() {
             MaterialTheme(colorScheme = scheme) {
                 var session by remember { mutableStateOf(store.read()) }
                 var page by remember { mutableStateOf("Home") }
-                val onLogin: (AccountSession) -> Unit = { new -> store.save(new); session = new; page = "Home" }
-                val signOut: () -> Unit = { store.clear(); session = AccountSession(); page = "Home" }
+                // Support mode is intentionally temporary: the vendor remains the
+                // persisted account, exactly as in iOS SupportResidentPickerView.
+                var supportResident by remember { mutableStateOf<AccountSession?>(null) }
+                var supportError by remember { mutableStateOf("") }
+                val scope = rememberCoroutineScope()
+                val onLogin: (AccountSession) -> Unit = { new ->
+                    store.save(new); session = new; supportResident = null; page = "Home"
+                }
+                val signOut: () -> Unit = {
+                    store.clear(); session = AccountSession(); supportResident = null; page = "Home"
+                }
+                val exitSupport: () -> Unit = {
+                    if (supportResident != null && session.isVendor) {
+                        scope.launch {
+                            try {
+                                ClubhouseApi.clearSupportResident(
+                                    session.vendorId, SupportDeviceIdentity.getOrCreate(this@MainActivity)
+                                )
+                                supportResident = null
+                                supportError = ""
+                                page = "Home"
+                            } catch (e: Exception) {
+                                supportError = e.message ?: "Unable to end support mode."
+                            }
+                        }
+                    }
+                }
                 ClubhouseNavigation(
-                    session = session,
+                    session = supportResident ?: session,
+                    vendorSession = session,
+                    supportModeActive = supportResident != null,
+                    supportError = supportError,
+                    onExitSupport = exitSupport,
+                    onSupportSelected = { selected ->
+                        supportResident = selected
+                        supportError = ""
+                        page = "Home"
+                    },
                     page = page,
                     onPage = { page = it },
                     onLogin = onLogin,
@@ -46,6 +81,11 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun ClubhouseNavigation(
     session: AccountSession,
+    vendorSession: AccountSession,
+    supportModeActive: Boolean,
+    supportError: String,
+    onExitSupport: () -> Unit,
+    onSupportSelected: (AccountSession) -> Unit,
     page: String,
     onPage: (String) -> Unit,
     onLogin: (AccountSession) -> Unit,
@@ -61,10 +101,16 @@ private fun ClubhouseNavigation(
                         Text("CLUBHOUSE LINKS", color = ClubhouseCyan, fontWeight = FontWeight.Black)
                         Text(session.neighborhoodName.ifBlank { if (session.isVendor) session.displayName else "Your neighborhood, connected" }, style = MaterialTheme.typography.labelSmall)
                     }
-                    if (BuildConfig.DEBUG) {
-                        TextButton(onClick = { onPage("QA Preview") }) { Text("Preview") }
+                    if (supportModeActive) {
+                        TextButton(onClick = onExitSupport) { Text("Exit Support") }
+                    } else {
+                        if (BuildConfig.DEBUG) {
+                            TextButton(onClick = { onPage("QA Preview") }) { Text("Preview") }
+                        }
+                        TextButton(onClick = { onPage("Account") }) {
+                            Text(if(session.isResident || session.isVendor) "Account" else "Sign in")
+                        }
                     }
-                    TextButton(onClick = { onPage("Account") }) { Text(if(session.isResident || session.isVendor) "Account" else "Sign in") }
                 }
             }
         },
@@ -88,7 +134,9 @@ private fun ClubhouseNavigation(
             }
         }
     ) { inner ->
-        Box(Modifier.fillMaxSize().padding(inner)) {
+        Column(Modifier.fillMaxSize().padding(inner)) {
+            if (supportError.isNotBlank()) Text(supportError, color = MaterialTheme.colorScheme.error)
+            Box(Modifier.weight(1f)) {
             when(page) {
                 "Home" -> NativeHome(session, onPage)
                 "Account" -> AccountScreen(session, onLogin, onSignOut)
@@ -101,7 +149,15 @@ private fun ClubhouseNavigation(
                 "Services" -> ServicesScreen(session, onPage)
                 "Requests" -> RequestsScreen(session, onPage)
                 "Street Fair" -> StreetFairScreen(session, onPage)
+                "Support Search" -> if (BuildConfig.DEBUG && vendorSession.isVendor && !supportModeActive) {
+                    SupportResidentScreen(
+                        vendor=vendorSession,
+                        onClose={onPage("Home")},
+                        onResidentSelected=onSupportSelected
+                    )
+                } else NativeHome(session,onPage)
                 else -> NativeHome(session, onPage)
+            }
             }
         }
     }
