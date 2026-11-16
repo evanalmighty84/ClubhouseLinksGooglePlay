@@ -7,7 +7,7 @@ workflows:
       xcode: 26.5
       java: 17
       groups:
-        - "Clubhous Links"
+        - "Clubhouse Links"
     scripts:
       - name: Generate keystore and export ONLY an encrypted backup
         script: |
