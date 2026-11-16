@@ -68,11 +68,14 @@ workflows:
     artifacts:
       - app/build/outputs/apk/debug/*.apk
   clubhouse-links-google-play-release:
-    name: Clubhouse Links Android - Unsigned AAB (signing required)
+    name: Clubhouse Links Android - Signed AAB (Manual Google Play Upload)
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
+      xcode: 26.5
       java: 17
+      android_signing:
+        - clubhouse_googleplay
     scripts:
       - name: Generate Gradle wrapper if absent
         script: |
@@ -81,10 +84,23 @@ workflows:
             gradle wrapper --gradle-version 8.10.2
           fi
           chmod +x gradlew
-      - name: Build release AAB
+      - name: Check signing identity is available
         script: |
-          ./gradlew --no-daemon bundleRelease
+          set -eu
+          : "${CM_KEYSTORE_PATH:?Missing secure Android keystore from Codemagic}"
+          : "${CM_KEYSTORE_PASSWORD:?Missing keystore password}"
+          : "${CM_KEY_ALIAS:?Missing key alias}"
+          : "${CM_KEY_PASSWORD:?Missing key password}"
+          test -f "$CM_KEYSTORE_PATH"
+          echo "Release signing identity is available; credentials remain hidden."
+      - name: Build signed Google Play AAB
+        script: |
+          set -eu
+          ./gradlew --no-daemon clean bundleRelease
+          test -s app/build/outputs/bundle/release/app-release.aab
+          echo "Signed release bundle generated."
     artifacts:
       - app/build/outputs/bundle/release/*.aab
-# Release publishing is intentionally NOT automated without Android app-signing,
-# Google Play Console, Firebase and authenticated backend security in place.
+# First AAB will be uploaded manually to the Google Play internal testing track.
+# Automated publishing is intentionally NOT configured; it requires separate
+# Google Play API credentials, tested authorization, and explicit release approval.
