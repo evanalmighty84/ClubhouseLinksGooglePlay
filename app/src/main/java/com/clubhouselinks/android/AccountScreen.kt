@@ -85,9 +85,9 @@ fun AccountScreen(session: AccountSession, onLogin: (AccountSession) -> Unit, on
                         onLogin(AccountSession(
                             accountType="resident",
                             residentId=residentId,
-                            displayName=listOf(resident.optString("first_name"),resident.optString("last_name"))
+                            displayName=listOf(resident?.optString("first_name").orEmpty(), resident?.optString("last_name").orEmpty())
                                 .filter(String::isNotBlank).joinToString(" "),
-                            neighborhoodName=resident.optString("neighborhood_name")
+                            neighborhoodName=resident?.optString("neighborhood_name").orEmpty()
                         ))
                     } else if(existing==null) {
                         needsNewResidentRegistration=true
