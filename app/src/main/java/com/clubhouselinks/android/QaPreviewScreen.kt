@@ -28,6 +28,7 @@ private val PreviewViolet = Color(0xFF6726B4)
 @Composable
 fun QaPreviewScreen(onClose: () -> Unit) {
     var mode by remember { mutableStateOf("Vendor") }
+    var sampleResident by remember { mutableStateOf("Country Place") }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState())
             .background(Brush.verticalGradient(listOf(Color(0xFF002D37), ClubhouseNavy, Color(0xFF21083B))))
@@ -53,8 +54,17 @@ fun QaPreviewScreen(onClose: () -> Unit) {
             }
         }
         when (mode) {
-            "Vendor" -> VendorModeSample()
-            "Resident" -> ResidentModeSample()
+            "Vendor" -> VendorModeSample(onSwitchResident={mode="Resident picker"},onNewSignup={mode="New Signup"},onHoaDemo={mode="HOA Board"})
+            "Resident picker" -> {
+                Text("Select a sample resident profile",style=MaterialTheme.typography.titleLarge)
+                listOf("Country Place","Cottonwood Creek","Crowley Park").forEach { neighborhood ->
+                    SampleActionCard("Sample Resident",neighborhood,PreviewTeal,PreviewViolet,
+                        onClick={sampleResident=neighborhood; mode="Resident"}) {
+                        Icon(Icons.Default.Person,contentDescription=null,tint=Color.White)
+                    }
+                }
+            }
+            "Resident" -> ResidentModeSample(sampleResident)
             "HOA Board" -> BoardModeSample()
             else -> SignupModeSample()
         }
@@ -72,13 +82,14 @@ fun QaPreviewScreen(onClose: () -> Unit) {
 @Composable
 private fun SampleActionCard(
     title: String, subtitle: String, start: Color, end: Color,
+    onClick: () -> Unit = {},
     icon: @Composable () -> Unit
 ) {
     Row(
         Modifier.fillMaxWidth().background(
             Brush.horizontalGradient(listOf(start,end)),
             RoundedCornerShape(20.dp)
-        ).padding(horizontal=18.dp,vertical=21.dp),
+        ).clickable(onClick=onClick).padding(horizontal=18.dp,vertical=21.dp),
         verticalAlignment=Alignment.CenterVertically,
         horizontalArrangement=Arrangement.spacedBy(15.dp)
     ) {
@@ -92,20 +103,20 @@ private fun SampleActionCard(
 }
 
 @Composable
-private fun VendorModeSample() {
+private fun VendorModeSample(onSwitchResident: () -> Unit, onNewSignup: () -> Unit, onHoaDemo: () -> Unit) {
     Text("Account Settings",color=PreviewTeal, textAlign=TextAlign.End, modifier=Modifier.fillMaxWidth())
     Text("SAMPLE LANDSCAPING", fontWeight=FontWeight.Black,
         style=MaterialTheme.typography.headlineLarge, textAlign=TextAlign.Center,
         modifier=Modifier.fillMaxWidth(),color=Color.White)
     Text("Landscaping",style=MaterialTheme.typography.titleLarge,color=PreviewTeal,
         textAlign=TextAlign.Center,modifier=Modifier.fillMaxWidth())
-    SampleActionCard("Switch Resident","Troubleshoot a resident account",PreviewOrange,PreviewPurple) {
+    SampleActionCard("Switch Resident","Preview resident accounts",PreviewOrange,PreviewPurple,onClick=onSwitchResident) {
         Icon(Icons.Default.People,contentDescription=null,tint=Color.White)
     }
-    SampleActionCard("Test New Signup","Test registration & SMS verification",PreviewTeal,PreviewPurple) {
+    SampleActionCard("Test New Signup","Preview registration & SMS verification",PreviewTeal,PreviewPurple,onClick=onNewSignup) {
         Icon(Icons.Default.PersonAdd,contentDescription=null,tint=Color.White)
     }
-    SampleActionCard("HOA Demo Account","Cottonwood Creek Board Member",PreviewPurple,PreviewTeal) {
+    SampleActionCard("HOA Demo Account","Cottonwood Creek Board Member",PreviewPurple,PreviewTeal,onClick=onHoaDemo) {
         Icon(Icons.Default.House,contentDescription=null,tint=Color.White)
     }
     PreviewPanel("Business profile", "Sample landscaping provider", "Home · Events · Jobs Submitted · Service Requests")
@@ -113,10 +124,10 @@ private fun VendorModeSample() {
 }
 
 @Composable
-private fun ResidentModeSample() {
+private fun ResidentModeSample(neighborhood: String) {
     Text("YOUR NEIGHBORHOOD",color=PreviewTeal,fontWeight=FontWeight.Bold)
-    Text("Country Place",style=MaterialTheme.typography.headlineLarge,fontWeight=FontWeight.Black)
-    PreviewPanel("Welcome, Sample Resident", "Country Place · Plano, TX", "Resident account preview")
+    Text(neighborhood,style=MaterialTheme.typography.headlineLarge,fontWeight=FontWeight.Black)
+    PreviewPanel("Welcome, Sample Resident", "$neighborhood · Resident preview", "No live account selected")
     PreviewPanel("Neighborhood Street Fair", "Food trucks, neighborhood events and participating local businesses", "Explore Street Fair")
     PreviewPanel("Community events", "Upcoming neighborhood gatherings and HOA events", "View events")
     PreviewPanel("Find a local provider", "Explore trusted service providers", "Browse services")
