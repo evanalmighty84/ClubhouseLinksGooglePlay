@@ -120,8 +120,13 @@ private fun NativeVendorHome(session: AccountSession, navigate: (String) -> Unit
             Text(error,color=MaterialTheme.colorScheme.error)
             OutlinedButton(onClick={refresh()}){Text("Retry")}
         }
-        if(BuildConfig.DEBUG)PortedAction("QA Screen Preview",
-            "Sample role views only — never switches real accounts.",{navigate("QA Preview")})
+        if(BuildConfig.DEBUG) {
+            PortedAction("Switch Resident",
+                "Search for a real resident by name, phone, address or ID. Requires an authorized support device.",
+                {navigate("Support Search")})
+            PortedAction("QA Screen Preview",
+                "Sample role views only — never switches real accounts.",{navigate("QA Preview")})
+        }
         PortedArtwork("clubhouse_app_icon","Clubhouse Links")
         PortedAction("Jobs Submitted","View vendor project submissions.",{navigate("Jobs Submitted")})
         PortedAction("Service Requests","Open requests assigned to this vendor.",{navigate("Service Requests")})
