@@ -63,6 +63,20 @@ object ClubhouseApi {
     suspend fun residentRequests(residentId: Int) = get("residents/$residentId/service-requests")
     suspend fun residentCompletedProjects(residentId: Int) = get("residents/completed-projects/$residentId")
 
+    // iOS SupportResidentAPI equivalents. Backend checks can_support_residents and
+    // the exact device token in hoa_vendor_devices before returning resident data.
+    suspend fun searchSupportResidents(vendorId: Int, token: String, search: String): JSONObject =
+        post("vendors/$vendorId/support-residents/search",
+            JSONObject().put("device_token", token).put("search", search))
+
+    suspend fun switchSupportResident(vendorId: Int, token: String, residentId: Int): JSONObject =
+        post("vendors/$vendorId/support-resident",
+            JSONObject().put("device_token", token)
+                .put("resident_id", residentId).put("environment", "development"))
+
+    suspend fun clearSupportResident(vendorId: Int, token: String): JSONObject =
+        delete("vendors/$vendorId/support-resident", JSONObject().put("device_token", token))
+
     // Uses same submission contract and endpoint as iOS VendorAPI.submitResidentRequest.
     suspend fun sendResidentRequest(residentId: Int, payload: JSONObject): JSONObject =
         post("residents/$residentId/service-requests", payload)
@@ -71,6 +85,7 @@ object ClubhouseApi {
     private suspend fun get(path: String) = request("GET", path, null)
     private suspend fun post(path: String, body: JSONObject) = request("POST", path, body)
     private suspend fun patch(path: String, body: JSONObject? = null) = request("PATCH", path, body)
+    private suspend fun delete(path: String, body: JSONObject) = request("DELETE", path, body)
     private suspend fun request(method: String, path: String, payload: JSONObject?) = withContext(Dispatchers.IO) {
         val conn = (URL("$root/$path").openConnection() as HttpURLConnection).apply {
             requestMethod = method
