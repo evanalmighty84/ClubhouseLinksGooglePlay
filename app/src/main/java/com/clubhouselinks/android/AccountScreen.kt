@@ -35,6 +35,7 @@ fun AccountScreen(session: AccountSession, onLogin: (AccountSession) -> Unit, on
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("") }
     var verifiedFor by remember { mutableStateOf("") }
+    var needsNewResidentRegistration by remember { mutableStateOf(false) }
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
@@ -47,21 +48,55 @@ fun AccountScreen(session: AccountSession, onLogin: (AccountSession) -> Unit, on
     ContentColumn {
         Text("Join Clubhouse Links", style=MaterialTheme.typography.headlineMedium, fontWeight=FontWeight.Bold)
         Text("Verify your mobile number before joining or accessing your vendor profile.")
-        SingleChoiceSegment(account, onChange = { account=it }, first="resident", second="vendor")
+        SingleChoiceSegment(account, onChange = {
+            account=it
+            verified=false
+            verifiedFor=""
+            needsNewResidentRegistration=false
+            code=""
+            message=""
+        }, first="resident", second="vendor")
         OutlinedTextField(
-            value=phone, onValueChange={ new -> val digits=new.filter(Char::isDigit).take(10); if(digits!=phone){ verified=false; verifiedFor="" }; phone=digits },
+            value=phone, onValueChange={ new -> val digits=new.filter(Char::isDigit).take(10); if(digits!=phone){ verified=false; verifiedFor=""; needsNewResidentRegistration=false; code=""; message="" }; phone=digits },
             modifier=Modifier.fillMaxWidth(), label={Text("10-digit mobile phone")}, keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Phone), singleLine=true
         )
         Button(enabled=validPhone && !busy, onClick={launchAction {
             ClubhouseApi.sendVerification(phone)
             verified=false
+            verifiedFor=""
+            needsNewResidentRegistration=false
+            code=""
             message="A verification code has been sent."
         }}) { Text(if(busy) "Working…" else "Send verification code") }
         OutlinedTextField(value=code,onValueChange={code=it.filter(Char::isDigit).take(6)},label={Text("6-digit verification code")},modifier=Modifier.fillMaxWidth(),singleLine=true,keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number))
         Button(enabled=validPhone && code.length==6 && !busy, onClick={launchAction {
             val response=ClubhouseApi.checkVerification(phone, code)
             if(response.optBoolean("success",false) && response.optBoolean("verified",false)){
-                verified=true; verifiedFor=phone; message="Phone verified."
+                verified=true
+                verifiedFor=phone
+                message="Phone number verified successfully."
+                if(account=="resident") {
+                    // Do not show registration fields for an existing resident.
+                    // A 404 means the verified phone has no resident account.
+                    val existing=ClubhouseApi.residentLookupAfterVerification(phone)
+                    val resident=existing?.optJSONObject("resident")
+                    val residentId=resident?.optInt("id",0) ?: 0
+                    if(residentId>0) {
+                        onLogin(AccountSession(
+                            accountType="resident",
+                            residentId=residentId,
+                            displayName=listOf(resident.optString("first_name"),resident.optString("last_name"))
+                                .filter(String::isNotBlank).joinToString(" "),
+                            neighborhoodName=resident.optString("neighborhood_name")
+                        ))
+                    } else if(existing==null) {
+                        needsNewResidentRegistration=true
+                        message="Phone number verified successfully. No existing resident account was found. Please complete registration."
+                    } else {
+                        needsNewResidentRegistration=false
+                        message="Phone verified, but the existing account could not be loaded. Please try again; do not create a duplicate account."
+                    }
+                }
             } else message=response.optString("message", "Verification was not accepted")
         }}) { Text("Verify phone") }
         if(verified && verifiedFor==phone && account=="vendor") {
@@ -72,7 +107,7 @@ fun AccountScreen(session: AccountSession, onLogin: (AccountSession) -> Unit, on
                 else onLogin(AccountSession("vendor", vendorId=vendor.optInt("id"), displayName=vendor.optString("company_name")))
             }}) { Text("Open vendor account") }
         }
-        if(verified && verifiedFor==phone && account=="resident"){
+        if(verified && verifiedFor==phone && account=="resident" && needsNewResidentRegistration){
             OutlinedTextField(firstName,{firstName=it},Modifier.fillMaxWidth(),label={Text("First name")},singleLine=true)
             OutlinedTextField(lastName,{lastName=it},Modifier.fillMaxWidth(),label={Text("Last name")},singleLine=true)
             OutlinedTextField(address,{address=it},Modifier.fillMaxWidth(),label={Text("Street address")})
@@ -86,7 +121,9 @@ fun AccountScreen(session: AccountSession, onLogin: (AccountSession) -> Unit, on
                 else message=result.optString("message","Signup response did not contain a resident account")
             }}) { Text("Create resident account") }
         }
-        if(message.isNotBlank()) Text(message)
+        if(message.isNotBlank()) {
+            Text(message, color=if(message.startsWith("Phone number verified successfully")) ClubhouseCyan else MaterialTheme.colorScheme.onBackground)
+        }
         InfoCard("Security before Play release", "The existing server needs authenticated resident/vendor sessions and per-account authorization. Phone verification alone cannot secure all current API routes.")
     }
 }
