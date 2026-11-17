@@ -55,6 +55,8 @@ object ClubhouseApi {
         patch("vendors/$vendorId/service-requests/${encode(requestId)}/status", JSONObject().put("status", status))
     suspend fun residentVendors(residentId: Int) = get("residents/vendors/$residentId")
     suspend fun residentAnnouncements(residentId: Int): JSONObject = get("residents/announcements/$residentId")
+    suspend fun createBoardEvent(residentId: Int, payload: JSONObject): JSONObject =
+        post("hoaBoardMembers/$residentId/events", payload)
     suspend fun residentEvents(residentId: Int, boardMember: Boolean = false): JSONObject =
         get(if (boardMember) "hoaBoardMembers/$residentId/events" else "residents/events/$residentId")
     suspend fun residentProfile(residentId: Int) = get("residents/profile/$residentId")
