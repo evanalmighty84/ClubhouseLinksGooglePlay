@@ -147,8 +147,37 @@ fun ResidentParityHome(
     val works=remember(vendors){vendorProjects(vendors)}
     var service by remember(session.residentId){mutableStateOf("All Services")}
     var vendor by remember(session.residentId){mutableStateOf("All Vendors")}
-    val serviceOptions=remember(works){listOf("All Services")+works.map{it.service}.distinct().sorted()}
-    val vendorOptions=remember(works){listOf("All Vendors")+works.map{it.vendor}.distinct().sorted()}
+    // Match iOS: vendor filters are built from the live directory, not just
+    // vendors who already have approved project photos.
+    val serviceOptions=remember(vendors){
+        listOf("All Services")+
+            vendors.flatMap { item ->
+                val categories=item.optJSONArray("categories") ?: JSONArray()
+                (0 until categories.length()).mapNotNull{categories.optString(it)}+
+                    listOf(item.field("category"))
+            }.filter(String::isNotBlank).distinct().sorted()
+    }
+    val vendorOptions=remember(vendors,service) {
+        listOf("All Vendors")+
+            vendors.filter { item ->
+                if(service=="All Services") true
+                else {
+                    val categories=item.optJSONArray("categories") ?: JSONArray()
+                    item.field("category")==service ||
+                        (0 until categories.length()).any { i->categories.optString(i)==service }
+                }
+            }.map {it.field("company_name")}.filter(String::isNotBlank).distinct().sorted()
+    }
+    val context=LocalContext.current
+    val partnerVideo=remember(vendor) {
+        if(vendor=="All Vendors") null else {
+            val slug=vendor.lowercase()
+                .replace(Regex("[^a-z0-9]+"),"_").trim('_')
+            val resource="service_partner_$slug"
+            if(context.resources.getIdentifier(resource,"raw",context.packageName)!=0) resource
+            else "clubhouse_bird_newproject"
+        }
+    }
     val filtered=works.filter{
         (service=="All Services"||it.service==service) && (vendor=="All Vendors"||it.vendor==vendor)
     }
@@ -228,10 +257,28 @@ fun ResidentParityHome(
             Text("See trusted home service contractors used by neighbors near you in $community.",
                 color=Color.White.copy(alpha=0.78f))
             Text("Service",color=homeGlow,fontWeight=FontWeight.Bold)
-            ParitySelector(service,serviceOptions){service=it}
+            ParitySelector(service,serviceOptions){selected->
+                service=selected
+                vendor="All Vendors"
+            }
             Text("Vendor",color=homeGlow,fontWeight=FontWeight.Bold)
             ParitySelector(vendor,vendorOptions){vendor=it}
-            if(filtered.isEmpty()){
+            if(partnerVideo!=null){
+                // Selected partner owns the same media area as the neighborhood
+                // placeholder. Ship generic sample until a partner-specific MP4
+                // named service_partner_<slug>.mp4 is provided.
+                ClubhouseBirdMedia(
+                    rawName=partnerVideo,
+                    modifier=Modifier.fillMaxWidth().height(200.dp)
+                        .clip(RoundedCornerShape(17.dp))
+                )
+                Text(vendor,style=MaterialTheme.typography.titleMedium,
+                    fontWeight=FontWeight.Bold,color=Color.White)
+                if(partnerVideo=="clubhouse_bird_newproject"){
+                    Text("Sample Service Partner Video",
+                        color=homeGlow,style=MaterialTheme.typography.labelMedium)
+                }
+            }else if(filtered.isEmpty()){
                 val context=LocalContext.current
                 val image=remember{
                     context.resources.getIdentifier(
