@@ -55,7 +55,8 @@ fun ResidentParityEvents(session:AccountSession,readOnly:Boolean=false){
     var month by remember{mutableStateOf(YearMonth.now())}
     var selectedDay by remember{mutableStateOf<LocalDate?>(null)}
     val isBoard=profile?.optBoolean("board_of_directors",false)==true
-    val canManage=isBoard && !readOnly && boardView
+    val showBoardView=isBoard && boardView
+    val canManage=showBoardView && !readOnly
     fun reload(){
         if(!session.isResident)return
         scope.launch{
@@ -64,7 +65,7 @@ fun ResidentParityEvents(session:AccountSession,readOnly:Boolean=false){
                 val p=ClubhouseApi.residentProfile(session.residentId)
                 profile=p.optJSONObject("resident") ?: p
                 val board=profile?.optBoolean("board_of_directors",false)==true
-                val result=ClubhouseApi.residentEvents(session.residentId,board && !readOnly && boardView)
+                val result=ClubhouseApi.residentEvents(session.residentId,board && boardView)
                 events=(result.optJSONArray("events") ?: JSONArray()).eObjects()
             }catch(e:Exception){error=e.message ?: "Unable to load events"}
             finally{busy=false}
@@ -94,17 +95,17 @@ fun ResidentParityEvents(session:AccountSession,readOnly:Boolean=false){
     ){
         item{
             Column(verticalArrangement=Arrangement.spacedBy(12.dp)){
-                Text(if(canManage)"HOA Events" else "Community Events",
+                Text(if(showBoardView)"HOA Events" else "Community Events",
                     style=MaterialTheme.typography.headlineLarge,fontWeight=FontWeight.Bold)
                 Text(neighborhood,color=eventCyan,style=MaterialTheme.typography.titleLarge)
                 if(readOnly) Text("Resident support preview · event publishing disabled",
                     color=eventCyan,style=MaterialTheme.typography.labelMedium)
-                if(isBoard && !readOnly){
+                if(isBoard){
                     Button(onClick={boardView=!boardView},modifier=Modifier.fillMaxWidth()){
                         Text(if(boardView)"View as Resident" else "Return to HOA Board View")
                     }
                 }
-                if(canManage){
+                if(showBoardView){
                     EventPanel {
                         Text("Neighborhood Announcements",
                             style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
@@ -112,11 +113,12 @@ fun ResidentParityEvents(session:AccountSession,readOnly:Boolean=false){
                         Text("You can include a photo, description, date, time, and location.",
                             color=eventCyan,fontWeight=FontWeight.Bold)
                     }
-                    Button(onClick={showCreate=true},modifier=Modifier.fillMaxWidth().height(58.dp),
+                    Button(onClick={showCreate=true},enabled=canManage,
+                        modifier=Modifier.fillMaxWidth().height(58.dp),
                         colors=ButtonDefaults.buttonColors(containerColor=eventCyan,contentColor=Color.Black)){
                         Icon(Icons.Default.Event,contentDescription=null)
                         Spacer(Modifier.width(10.dp))
-                        Text("Create New Event",fontWeight=FontWeight.Bold)
+                        Text(if(readOnly)"Create New Event (read-only preview)" else "Create New Event",fontWeight=FontWeight.Bold)
                     }
                 }
                 if(busy)CircularProgressIndicator(color=eventCyan)
