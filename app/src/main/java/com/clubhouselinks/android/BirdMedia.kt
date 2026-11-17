@@ -32,20 +32,22 @@ fun ClubhouseBirdMedia(rawName:String,modifier:Modifier=Modifier){
         context.resources.getIdentifier(rawName,"raw",context.packageName)
     }
     if(id!=0){
-        AndroidView(
-            modifier=modifier,
-            factory={ctx->
-                VideoView(ctx).apply{
-                    setVideoURI(Uri.parse("android.resource://${ctx.packageName}/$id"))
-                    setOnPreparedListener{ player->
-                        player.isLooping=true
-                        player.setVolume(0f,0f)
-                        start()
+        key(rawName) {
+            AndroidView(
+                modifier=modifier,
+                factory={ctx->
+                    VideoView(ctx).apply{
+                        setVideoURI(Uri.parse("android.resource://${ctx.packageName}/$id"))
+                        setOnPreparedListener{ player->
+                            player.isLooping=true
+                            player.setVolume(0f,0f)
+                            start()
+                        }
                     }
-                }
-            },
-            update={view->if(!view.isPlaying)view.start()}
-        )
+                },
+                update={view->if(!view.isPlaying)view.start()}
+            )
+        }
     }else{
         val sprite=remember{
             context.resources.getIdentifier("clubhouse_bird_wave_sprite_512",
