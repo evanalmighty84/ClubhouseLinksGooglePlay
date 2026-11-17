@@ -52,7 +52,7 @@ fun EventsScreen(session: AccountSession, navigate: (String)->Unit) {
 }
 
 @Composable
-fun ServicesScreen(session: AccountSession, navigate: (String)->Unit) {
+fun ServicesScreen(session: AccountSession, navigate: (String)->Unit, readOnly: Boolean = false) {
     var vendors by remember(session.residentId) { mutableStateOf<List<JSONObject>>(emptyList()) }
     var error by remember(session.residentId) { mutableStateOf("") }
     var busy by remember(session.residentId) { mutableStateOf(false) }
@@ -86,12 +86,21 @@ fun ServicesScreen(session: AccountSession, navigate: (String)->Unit) {
             vendors.forEach { vendor->
                 val label=vendor.displayName()
                 val category=vendor.optString("category",vendor.optString("description"))
-                InfoCard(label,category,"Request service"){selectedVendor=vendor;selectedService=category;message="";submitError=""}
+                if (readOnly) {
+                    InfoCard(label,category,"View provider") { selectedVendor=vendor;selectedService=category }
+                } else {
+                    InfoCard(label,category,"Request service") { selectedVendor=vendor;selectedService=category;message="";submitError="" }
+                }
             }
         }
         selectedVendor?.let { vendor ->
             HorizontalDivider()
             Text("Request service from ${vendor.displayName()}",style=MaterialTheme.typography.titleMedium)
+            if (readOnly) {
+                Text("Read-only resident view: submitting service requests is disabled.",
+                    color=ClubhouseCyan)
+                OutlinedButton(onClick={selectedVendor=null}) { Text("Close") }
+            } else {
             OutlinedTextField(selectedService,{selectedService=it},Modifier.fillMaxWidth(),label={Text("Service")})
             OutlinedTextField(message,{message=it},Modifier.fillMaxWidth(),label={Text("Describe the work")},minLines=3)
             if(submitError.isNotBlank()) Text(submitError,color=MaterialTheme.colorScheme.error)
@@ -112,19 +121,26 @@ fun ServicesScreen(session: AccountSession, navigate: (String)->Unit) {
                     }
                 }) { Text(if(submitting)"Submitting…" else "Submit request") }
             }
+            }
         }
     }
 }
 
 @Composable
-fun RequestsScreen(session: AccountSession, navigate: (String)->Unit) {
+fun RequestsScreen(session: AccountSession, navigate: (String)->Unit, readOnly: Boolean = false) {
     if(session.isVendor) {
         VendorInbox(session)
     } else {
         ContentColumn {
             Text("Service requests",style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold)
             if(session.isResident) {
+                if (readOnly) {
+                    Text("Read-only view of this resident's request history.",color=ClubhouseCyan)
+                    InfoCard("Neighborhood vendors","Browse service providers in this community.",
+                        "View providers") { navigate("Services") }
+                } else {
                 InfoCard("Need a contractor?","Browse your neighborhood vendor directory and describe your project.","Browse vendors"){navigate("Services")}
+                }
                 ResidentRequestHistory(session)
             } else InfoCard("Sign in","Please verify your account to send service requests.","Sign in"){navigate("Account")}
         }
