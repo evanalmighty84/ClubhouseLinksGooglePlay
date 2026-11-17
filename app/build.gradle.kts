@@ -7,7 +7,11 @@ plugins {
 android {
   namespace = "com.clubhouselinks.android"
   compileSdk = 36
+  val mapsKey = System.getenv("GOOGLE_MAPS_API_KEY")?.trim().orEmpty()
   defaultConfig {
+    // Injected by Codemagic/CI. Never commit a Maps API key.
+    manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = mapsKey
+    buildConfigField("boolean", "HAS_GOOGLE_MAPS_KEY", mapsKey.isNotBlank().toString())
     applicationId = "com.clubhouselinks.android"
     minSdk = 26
     targetSdk = 36
@@ -57,6 +61,7 @@ dependencies {
   implementation("androidx.compose.material:material-icons-extended")
   // Load customer project photographs from the same HTTPS image_url values as iOS.
   implementation("io.coil-kt:coil-compose:2.7.0")
+  implementation("com.google.android.gms:play-services-maps:20.1.0")
   implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
   implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
