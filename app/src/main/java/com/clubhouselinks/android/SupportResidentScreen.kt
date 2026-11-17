@@ -6,11 +6,13 @@ import android.content.ClipboardManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -88,6 +90,25 @@ fun SupportResidentScreen(
             if (!verifiedDevice) {
                 Text("Authorization required", fontWeight=FontWeight.Bold)
                 Text("This debug-device identifier must be registered as an active support device for the signed-in vendor. It is not an Android push notification token.")
+                Text("Full enrollment identifier (64 characters)",
+                    color=ClubhouseCyan, fontWeight=FontWeight.Bold)
+                SelectionContainer {
+                    Surface(
+                        color=MaterialTheme.colorScheme.surfaceVariant,
+                        shape=androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        modifier=Modifier.fillMaxWidth()
+                    ) {
+                        Column(Modifier.padding(14.dp), verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                            token.chunked(16).forEach { chunk ->
+                                Text(chunk, fontFamily=FontFamily.Monospace,
+                                    style=MaterialTheme.typography.bodyMedium,
+                                    color=MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+                Text("Four rows of 16 characters. The emulator clipboard may not sync to your Mac. Keep the identifier private.",
+                    style=MaterialTheme.typography.bodySmall)
                 OutlinedButton(onClick = {
                     val clipboard=context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     clipboard.setPrimaryClip(ClipData.newPlainText("Clubhouse Links QA support device", token))
