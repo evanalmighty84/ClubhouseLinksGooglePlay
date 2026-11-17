@@ -26,7 +26,7 @@ private val PreviewOrange = Color(0xFFFF8735)
 private val PreviewViolet = Color(0xFF6726B4)
 
 @Composable
-fun QaPreviewScreen(onClose: () -> Unit) {
+fun QaPreviewScreen(onClose: () -> Unit, onRealResidentSearch: (() -> Unit)? = null) {
     var mode by remember { mutableStateOf("Vendor") }
     var sampleResident by remember { mutableStateOf("Country Place") }
     Column(
@@ -43,6 +43,15 @@ fun QaPreviewScreen(onClose: () -> Unit) {
             TextButton(onClick = onClose) { Text("Exit preview") }
         }
         Text("View Clubhouse Links as", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        if (onRealResidentSearch != null) {
+            SampleActionCard("View as Real Resident",
+                "Search live accounts and browse a neighborhood from the resident perspective",
+                PreviewOrange, PreviewPurple, onClick=onRealResidentSearch) {
+                Icon(Icons.Default.People, contentDescription=null, tint=Color.White)
+            }
+            Text("Authorized support device required · read-only neighbor view",
+                color=PreviewTeal, style=MaterialTheme.typography.labelSmall)
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("Vendor", "Resident").forEach { item ->
                 FilterChip(selected=mode==item, onClick={mode=item}, label={Text(item)})
@@ -56,6 +65,13 @@ fun QaPreviewScreen(onClose: () -> Unit) {
         when (mode) {
             "Vendor" -> VendorModeSample(onSwitchResident={mode="Resident picker"},onNewSignup={mode="New Signup"},onHoaDemo={mode="HOA Board"})
             "Resident picker" -> {
+                if (onRealResidentSearch != null) {
+                    SampleActionCard("Search Actual Residents",
+                        "Select an authorized real account, not a simulated one",
+                        PreviewOrange, PreviewPurple, onClick=onRealResidentSearch) {
+                        Icon(Icons.Default.Search,contentDescription=null,tint=Color.White)
+                    }
+                }
                 Text("Select a sample resident profile",style=MaterialTheme.typography.titleLarge)
                 listOf("Country Place","Cottonwood Creek","Crowley Park").forEach { neighborhood ->
                     SampleActionCard("Sample Resident",neighborhood,PreviewTeal,PreviewViolet,
@@ -64,7 +80,16 @@ fun QaPreviewScreen(onClose: () -> Unit) {
                     }
                 }
             }
-            "Resident" -> ResidentModeSample(sampleResident)
+            "Resident" -> {
+                ResidentModeSample(sampleResident)
+                if (onRealResidentSearch != null) {
+                    SampleActionCard("Open Real Neighbor View",
+                        "Use an actual resident profile with the neighborhood tabs",
+                        PreviewOrange, PreviewPurple, onClick=onRealResidentSearch) {
+                        Icon(Icons.Default.People,contentDescription=null,tint=Color.White)
+                    }
+                }
+            }
             "HOA Board" -> BoardModeSample()
             else -> SignupModeSample()
         }
