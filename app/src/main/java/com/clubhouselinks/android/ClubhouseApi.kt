@@ -57,6 +57,8 @@ object ClubhouseApi {
     suspend fun residentAnnouncements(residentId: Int): JSONObject = get("residents/announcements/$residentId")
     suspend fun createBoardEvent(residentId: Int, payload: JSONObject): JSONObject =
         post("hoaBoardMembers/$residentId/events", payload)
+    suspend fun submitCompletedProject(payload: JSONObject): JSONObject =
+        post("residents/completed-projects", payload)
     suspend fun residentEvents(residentId: Int, boardMember: Boolean = false): JSONObject =
         get(if (boardMember) "hoaBoardMembers/$residentId/events" else "residents/events/$residentId")
     suspend fun residentProfile(residentId: Int) = get("residents/profile/$residentId")
