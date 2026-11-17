@@ -41,6 +41,7 @@ fun ResidentStreetViewCard(profile: JSONObject) {
 
     val imageUrl = cleanProfileField(profile, "house_image_url")
     val imageAddress = cleanProfileField(profile, "house_image_address")
+    val testImage = cleanProfileField(profile, "house_image_source") == "test_placeholder"
     val allowedImage = imageUrl.takeIf {
         address.isNotBlank() &&
             imageAddress.isNotBlank() &&
@@ -49,9 +50,17 @@ fun ResidentStreetViewCard(profile: JSONObject) {
     }
 
     if (allowedImage != null) {
+        if (testImage) {
+            Text(
+                "TEST IMAGE — NOT AN ACTUAL HOUSE PHOTO",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
         SubcomposeAsyncImage(
             model = allowedImage,
-            contentDescription = "Saved house photo for this residence",
+            contentDescription = if (testImage) "Synthetic house image test placeholder" else "Saved house photo for this residence",
             modifier = Modifier.fillMaxWidth().height(200.dp)
                 .clip(RoundedCornerShape(18.dp)),
             contentScale = ContentScale.Crop,
