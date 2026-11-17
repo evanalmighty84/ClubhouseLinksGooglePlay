@@ -186,9 +186,11 @@ fun ResidentParityHome(
             val pager=rememberPagerState(pageCount={pages})
             HorizontalPager(state=pager,modifier=Modifier.fillMaxWidth()) { index ->
                 if(index==0) {
-                    Box(Modifier.fillMaxWidth().height(225.dp).clip(RoundedCornerShape(20.dp))
-                        .background(Brush.linearGradient(listOf(Color(0xFF003F58),Color(0xFF221238)))),
-                        contentAlignment=Alignment.Center){BirdArtwork()}
+                    ClubhouseBirdMedia(
+                        rawName="clubhouse_bird_announcements",
+                        modifier=Modifier.fillMaxWidth().height(225.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                    )
                 }else{
                     val item=updateItems[index-1]
                     Column(Modifier.fillMaxWidth().height(225.dp),
@@ -262,7 +264,8 @@ fun ResidentParityHome(
         OutlinedNeonPanel {
             Text("Start a Project",style=MaterialTheme.typography.headlineMedium,
                 fontWeight=FontWeight.Bold)
-            BirdArtwork()
+            ClubhouseBirdMedia("clubhouse_bird_newproject",
+                Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(20.dp)))
             Text("Share your completed project with neighbors or find someone to help with your next one.")
             Button(onClick={navigate("Submit Job")},enabled=!readOnly,
                 modifier=Modifier.fillMaxWidth()){
