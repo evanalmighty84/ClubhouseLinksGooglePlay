@@ -167,7 +167,7 @@ private fun ClubhouseNavigation(
                     )
                 } else NativeHome(session, onPage)
                 "Events" -> EventsScreen(session, onPage, readOnly=supportModeActive)
-                "Submit Job" -> SubmitJobScreen(session, onPage)
+                "Submit Job" -> SubmitJobScreen(session, onPage, readOnly=supportModeActive)
                 "Jobs Submitted" -> JobsSubmittedScreen(session, onPage)
                 "Request Service" -> RequestsScreen(session, onPage, readOnly = supportModeActive)
                 "Service Requests" -> RequestsScreen(session, onPage)
