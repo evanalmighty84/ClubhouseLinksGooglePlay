@@ -102,6 +102,7 @@ private fun ClubhouseNavigation(
                         Text(session.neighborhoodName.ifBlank { if (session.isVendor) session.displayName else "Your neighborhood, connected" }, style = MaterialTheme.typography.labelSmall)
                     }
                     if (supportModeActive) {
+                        TextButton(onClick = { onPage("Account") }) { Text("Account") }
                         TextButton(onClick = onExitSupport) { Text("Exit Support") }
                     } else {
                         if (BuildConfig.DEBUG) {
@@ -156,8 +157,7 @@ private fun ClubhouseNavigation(
             Box(Modifier.weight(1f)) {
             when(page) {
                 "Home" -> if(session.isResident) ResidentParityHome(session, onPage, readOnly=supportModeActive) else NativeHome(session, onPage)
-                "Account" -> if (supportModeActive) NativeHome(session, onPage)
-                    else AccountScreen(session, onLogin, onSignOut)
+                "Account" -> AccountScreen(session, onLogin, onSignOut, readOnly=supportModeActive)
                 "QA Preview" -> if (BuildConfig.DEBUG) {
                     QaPreviewScreen(
                         onClose = { onPage("Home") },
