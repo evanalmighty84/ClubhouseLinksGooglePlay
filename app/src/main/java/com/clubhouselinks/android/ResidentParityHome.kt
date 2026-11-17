@@ -169,14 +169,10 @@ fun ResidentParityHome(
             }.map {it.field("company_name")}.filter(String::isNotBlank).distinct().sorted()
     }
     val context=LocalContext.current
-    val partnerVideo=remember(vendor) {
-        if(vendor=="All Vendors") null else {
-            val slug=vendor.lowercase()
-                .replace(Regex("[^a-z0-9]+"),"_").trim('_')
-            val resource="service_partner_$slug"
-            if(context.resources.getIdentifier(resource,"raw",context.packageName)!=0) resource
-            else "clubhouse_bird_newproject"
-        }
+    val selectedLogo=remember(vendors,vendor) {
+        vendors.firstOrNull { it.field("company_name")==vendor }
+            ?.field("logo_url")
+            ?.takeIf { it.startsWith("https://") || it.startsWith("http://") }
     }
     val filtered=works.filter{
         (service=="All Services"||it.service==service) && (vendor=="All Vendors"||it.vendor==vendor)
@@ -263,21 +259,29 @@ fun ResidentParityHome(
             }
             Text("Vendor",color=homeGlow,fontWeight=FontWeight.Bold)
             ParitySelector(vendor,vendorOptions){vendor=it}
-            if(partnerVideo!=null){
-                // Selected partner owns the same media area as the neighborhood
-                // placeholder. Ship generic sample until a partner-specific MP4
-                // named service_partner_<slug>.mp4 is provided.
-                ClubhouseBirdMedia(
-                    rawName=partnerVideo,
-                    modifier=Modifier.fillMaxWidth().height(200.dp)
-                        .clip(RoundedCornerShape(17.dp))
-                )
-                Text(vendor,style=MaterialTheme.typography.titleMedium,
-                    fontWeight=FontWeight.Bold,color=Color.White)
-                if(partnerVideo=="clubhouse_bird_newproject"){
+            if(vendor!="All Vendors"){
+                var logoFailed by remember(vendor,selectedLogo) { mutableStateOf(false) }
+                if(selectedLogo!=null && !logoFailed){
+                    AsyncImage(
+                        model=selectedLogo,
+                        contentDescription="$vendor company logo",
+                        modifier=Modifier.fillMaxWidth().height(200.dp)
+                            .clip(RoundedCornerShape(17.dp))
+                            .background(Color.White),
+                        contentScale=ContentScale.Fit,
+                        onError={logoFailed=true}
+                    )
+                }else{
+                    ClubhouseBirdMedia(
+                        rawName="clubhouse_bird_newproject",
+                        modifier=Modifier.fillMaxWidth().height(200.dp)
+                            .clip(RoundedCornerShape(17.dp))
+                    )
                     Text("Sample Service Partner Video",
                         color=homeGlow,style=MaterialTheme.typography.labelMedium)
                 }
+                Text(vendor,style=MaterialTheme.typography.titleMedium,
+                    fontWeight=FontWeight.Bold,color=Color.White)
             }else if(filtered.isEmpty()){
                 val context=LocalContext.current
                 val image=remember{
