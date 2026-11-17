@@ -276,21 +276,9 @@ private fun displayProjectDate(value:String):String {
     return value.take(10)
 }
 
-/** iOS RequestView's resident branch includes photo capture/upload and vendor selection.
- *  Those must be ported before enabling project submission on Android. */
+/** iOS resident submission with category, vendor and completed-photo upload. */
 @Composable
-fun SubmitJobScreen(session: AccountSession, navigate: (String) -> Unit) {
-    ContentColumn {
-        Text("Submit New Project", style=MaterialTheme.typography.headlineLarge, fontWeight=FontWeight.Bold)
-        Text("Share a finished project from a contractor you used so nearby neighbors can discover trusted home service providers.")
-        if (!session.isResident) {
-            InfoCard("Sign in to submit a project", "Your project must belong to a verified resident profile.",
-                "Sign in") { navigate("Account") }
-        } else {
-            InfoCard("Completed projects", "Your submitted projects and account details are available below.")
-            ProfileDetails(session)
-            Text("Photo upload and vendor selection from the iOS project submission screen are not yet implemented in Android. No project will be created from this screen.",
-                style=MaterialTheme.typography.bodySmall)
-        }
-    }
+fun SubmitJobScreen(session: AccountSession, navigate: (String) -> Unit,
+                    readOnly: Boolean = false) {
+    ResidentProjectSubmit(session, navigate, readOnly=readOnly)
 }
