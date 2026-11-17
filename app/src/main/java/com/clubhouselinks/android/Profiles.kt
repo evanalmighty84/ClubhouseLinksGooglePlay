@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
@@ -40,6 +41,22 @@ fun ProfileDetails(session: AccountSession) {
     OutlinedButton(onClick={ refresh() },enabled=!busy){Text(if(busy)"Loading…" else "Refresh profile")}
     if(error.isNotBlank()) Text(error,color=MaterialTheme.colorScheme.error)
     data?.let{ p ->
+        val isBoard = session.isResident && p.optBoolean("board_of_directors", false)
+        val role = when {
+            session.isVendor -> "Vendor"
+            isBoard -> "HOA Administrator"
+            session.isResident -> "Resident"
+            else -> "Unknown"
+        }
+        Text("Account Type", style=MaterialTheme.typography.titleLarge, fontWeight=FontWeight.Bold)
+        Surface(color=MaterialTheme.colorScheme.secondaryContainer,
+            shape=androidx.compose.foundation.shape.RoundedCornerShape(12.dp)) {
+            Text(role, color=MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier=Modifier.padding(horizontal=16.dp,vertical=9.dp),
+                fontWeight=FontWeight.Bold)
+        }
+        if(isBoard) Text("HOA board access is enabled for this resident account.")
+        if(session.isResident) ResidentStreetViewCard(p)
         val rows=if(session.isVendor) listOf("company_name","category","contact_name","email","website","description")
         else listOf("first_name","last_name","neighborhood_name","display_area_name","approval_status")
         rows.forEach { key->
