@@ -17,14 +17,15 @@ import org.json.JSONObject
  * substitute for server authorization. Release is blocked until that is addressed.
  */
 @Composable
-fun AccountScreen(session: AccountSession, onLogin: (AccountSession) -> Unit, onSignOut: () -> Unit) {
+fun AccountScreen(session: AccountSession, onLogin: (AccountSession) -> Unit, onSignOut: () -> Unit, readOnly: Boolean = false) {
     if(session.isVendor || session.isResident) {
         ContentColumn {
-            Text("My account", style = MaterialTheme.typography.headlineMedium)
+            Text("Account Settings", style = MaterialTheme.typography.headlineMedium)
+            if(readOnly) Text("Read-only support view — no changes can be made to this resident account.", color=ClubhouseCyan)
             InfoCard(session.displayName, if(session.isVendor) "Vendor account" else "Resident · ${session.neighborhoodName}")
             Text("Account data is provided by the existing Clubhouse Links backend.")
             ProfileDetails(session)
-            OutlinedButton(onClick = onSignOut) { Text("Sign out on this device") }
+            if(!readOnly) OutlinedButton(onClick = onSignOut) { Text("Sign out on this device") }
         }
         return
     }
