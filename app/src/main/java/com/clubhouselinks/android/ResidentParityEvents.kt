@@ -121,7 +121,7 @@ fun ResidentParityEvents(session:AccountSession,readOnly:Boolean=false){
                 }
                 if(busy)CircularProgressIndicator(color=eventCyan)
                 if(error.isNotBlank()) Text(error,color=MaterialTheme.colorScheme.error)
-                OutlinedButton(onClick={reload},enabled=!busy) {Text("Refresh events")}
+                OutlinedButton(onClick={reload()},enabled=!busy) {Text("Refresh events")}
             }
         }
         item{
