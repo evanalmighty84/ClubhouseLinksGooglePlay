@@ -155,7 +155,7 @@ private fun ClubhouseNavigation(
             }
             Box(Modifier.weight(1f)) {
             when(page) {
-                "Home" -> NativeHome(session, onPage)
+                "Home" -> if(session.isResident) ResidentParityHome(session, onPage, readOnly=supportModeActive) else NativeHome(session, onPage)
                 "Account" -> if (supportModeActive) NativeHome(session, onPage)
                     else AccountScreen(session, onLogin, onSignOut)
                 "QA Preview" -> if (BuildConfig.DEBUG) {
