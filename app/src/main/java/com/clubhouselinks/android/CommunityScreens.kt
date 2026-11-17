@@ -15,38 +15,16 @@ private fun JSONObject.displayName(): String =
     optString("company_name").ifBlank { optString("name","Local provider") }
 
 @Composable
-fun EventsScreen(session: AccountSession, navigate: (String)->Unit) {
-    var loading by remember(session.residentId) { mutableStateOf(false) }
-    var events by remember(session.residentId) { mutableStateOf<List<JSONObject>>(emptyList()) }
-    var error by remember(session.residentId) { mutableStateOf("") }
-    val scope=rememberCoroutineScope()
-    fun refresh(){
-        if(!session.isResident || loading) return
-        scope.launch {
-            loading=true; error=""
-            try {
-                val response=ClubhouseApi.residentEvents(session.residentId)
-                val arr=response.optJSONArray("events") ?: JSONArray()
-                events=(0 until arr.length()).mapNotNull { arr.optJSONObject(it) }
-            }catch(e:Exception){error=e.message ?: "Unable to load events"}finally{loading=false}
-        }
-    }
-    LaunchedEffect(session.residentId){ if(session.isResident) refresh() }
-    ContentColumn {
-        Text("Neighborhood events",style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold)
-        Text("Stay informed about events and activities near your community.")
-        if(!session.isResident) InfoCard("Sign in to see events","Event listings are tied to your verified neighborhood account.","Sign in"){ navigate("Account") }
-        else {
-            Button(onClick={ refresh() },enabled=!loading){ Text(if(loading)"Refreshing…" else "Refresh events") }
-            if(error.isNotBlank())Text(error,color=MaterialTheme.colorScheme.error)
-            if(!loading && error.isBlank() && events.isEmpty()) Text("No community events are listed for this account.")
-            events.forEach { item->
-                InfoCard(
-                    item.optString("title","Community event"),
-                    listOf(item.optString("starts_at"),item.optString("neighborhood_name"),item.optString("address"),item.optString("description"))
-                        .filter(String::isNotBlank).joinToString("\n")
-                )
-            }
+fun EventsScreen(session: AccountSession, navigate: (String)->Unit, readOnly: Boolean = false) {
+    if(session.isResident) {
+        ResidentParityEvents(session, readOnly=readOnly)
+    } else {
+        ContentColumn {
+            Text("Community Events", style=MaterialTheme.typography.headlineLarge,
+                fontWeight=FontWeight.Bold)
+            InfoCard("Neighborhood calendar",
+                "Sign in with a resident account to view your neighborhood's live events.",
+                "Sign in") { navigate("Account") }
         }
     }
 }
