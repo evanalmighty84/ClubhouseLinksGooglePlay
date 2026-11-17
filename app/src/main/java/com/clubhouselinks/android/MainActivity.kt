@@ -136,18 +136,43 @@ private fun ClubhouseNavigation(
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
             if (supportError.isNotBlank()) Text(supportError, color = MaterialTheme.colorScheme.error)
+            if (supportModeActive) {
+                Surface(color = Color(0xFF203851), modifier = Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(horizontal = 15.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("VIEWING AS RESIDENT · READ ONLY",
+                                color = ClubhouseCyan,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelLarge)
+                            Text(session.displayName.ifBlank { "Resident" } +
+                                " · " + session.neighborhoodName,
+                                style = MaterialTheme.typography.labelMedium)
+                        }
+                        TextButton(onClick = onExitSupport) { Text("Return to Aspen") }
+                    }
+                }
+            }
             Box(Modifier.weight(1f)) {
             when(page) {
                 "Home" -> NativeHome(session, onPage)
-                "Account" -> AccountScreen(session, onLogin, onSignOut)
-                "QA Preview" -> if (BuildConfig.DEBUG) QaPreviewScreen(onClose = { onPage("Home") }) else HomeScreen(session, onPage)
+                "Account" -> if (supportModeActive) NativeHome(session, onPage)
+                    else AccountScreen(session, onLogin, onSignOut)
+                "QA Preview" -> if (BuildConfig.DEBUG) {
+                    QaPreviewScreen(
+                        onClose = { onPage("Home") },
+                        onRealResidentSearch = if (vendorSession.isVendor && !supportModeActive) {
+                            { onPage("Support Search") }
+                        } else null
+                    )
+                } else NativeHome(session, onPage)
                 "Events" -> EventsScreen(session, onPage)
                 "Submit Job" -> SubmitJobScreen(session, onPage)
                 "Jobs Submitted" -> JobsSubmittedScreen(session, onPage)
-                "Request Service" -> RequestsScreen(session, onPage)
+                "Request Service" -> RequestsScreen(session, onPage, readOnly = supportModeActive)
                 "Service Requests" -> RequestsScreen(session, onPage)
-                "Services" -> ServicesScreen(session, onPage)
-                "Requests" -> RequestsScreen(session, onPage)
+                "Services" -> ServicesScreen(session, onPage, readOnly = supportModeActive)
+                "Requests" -> RequestsScreen(session, onPage, readOnly = supportModeActive)
                 "Street Fair" -> StreetFairScreen(session, onPage)
                 "Support Search" -> if (BuildConfig.DEBUG && vendorSession.isVendor && !supportModeActive) {
                     SupportResidentScreen(
