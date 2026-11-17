@@ -164,7 +164,7 @@ fun ResidentParityHome(
         if(busy)CircularProgressIndicator(color=homeGlow)
         if(error.isNotBlank()) {
             Text(error,color=MaterialTheme.colorScheme.error)
-            OutlinedButton(onClick={load}) {Text("Retry loading")}
+            OutlinedButton(onClick={load()}) {Text("Retry loading")}
         }
         OutlinedNeonPanel {
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
