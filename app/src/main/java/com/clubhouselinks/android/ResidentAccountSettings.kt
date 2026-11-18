@@ -69,7 +69,8 @@ private fun SettingsInfoRow(title: String, value: String) {
 fun ResidentAccountSettings(
     session: AccountSession,
     readOnly: Boolean,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onManageResidents: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -210,6 +211,35 @@ fun ResidentAccountSettings(
                     SettingsInfoRow("Area", area)
                     SettingsInfoRow("Signup Method", signupMethod)
                     SettingsInfoRow("Address", address.ifBlank { "Not set" })
+                }
+            }
+
+            if (isBoard) {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    border = BorderStroke(1.dp, settingsCyan.copy(alpha = 0.6f)),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF18283A))
+                ) {
+                    Column(
+                        Modifier.fillMaxWidth().background(settingsPanel).padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("HOA Resident Management",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("Manage the resident directory for $area. Add residents individually or upload a directory for review and import.",
+                            color = Color.White.copy(alpha = 0.8f),
+                            style = MaterialTheme.typography.bodyMedium)
+                        if (readOnly) {
+                            Text("Support Mode does not grant board privileges. The board member's own phone must be verified before any directory access or import.",
+                                color = settingsCyan, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Button(
+                            onClick = onManageResidents,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = settingsPurple)
+                        ) { Text("Manage HOA Residents", fontWeight = FontWeight.Bold) }
+                    }
                 }
             }
 
