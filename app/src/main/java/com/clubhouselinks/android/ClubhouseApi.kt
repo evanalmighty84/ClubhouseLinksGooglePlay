@@ -57,6 +57,17 @@ object ClubhouseApi {
     suspend fun residentAnnouncements(residentId: Int): JSONObject = get("residents/announcements/$residentId")
     suspend fun createBoardEvent(residentId: Int, payload: JSONObject): JSONObject =
         post("hoaBoardMembers/$residentId/events", payload)
+    // Short-lived, SMS-verified HOA board roster session. Token stays in memory
+    // of the roster screen; never persist or send it with unrelated calls.
+    suspend fun boardRosterStart(boardId: Int) =
+        post("hoaBoardMembers/$boardId/resident-roster/session/start", JSONObject())
+    suspend fun boardRosterVerify(boardId: Int, code: String) =
+        post("hoaBoardMembers/$boardId/resident-roster/session/verify",
+            JSONObject().put("code", code))
+    suspend fun boardRosterList(boardId: Int, token: String) =
+        request("GET", "hoaBoardMembers/$boardId/resident-roster", null, token)
+    suspend fun boardRosterUpdate(boardId: Int, token: String, residentId: Int, changes: JSONObject) =
+        request("PATCH", "hoaBoardMembers/$boardId/resident-roster/$residentId", changes, token)
     suspend fun submitCompletedProject(payload: JSONObject): JSONObject =
         post("residents/completed-projects", payload)
     suspend fun residentEvents(residentId: Int, boardMember: Boolean = false): JSONObject =
@@ -91,13 +102,14 @@ object ClubhouseApi {
     private suspend fun post(path: String, body: JSONObject) = request("POST", path, body)
     private suspend fun patch(path: String, body: JSONObject? = null) = request("PATCH", path, body)
     private suspend fun delete(path: String, body: JSONObject) = request("DELETE", path, body)
-    private suspend fun request(method: String, path: String, payload: JSONObject?) = withContext(Dispatchers.IO) {
+    private suspend fun request(method: String, path: String, payload: JSONObject?, bearer: String? = null) = withContext(Dispatchers.IO) {
         val conn = (URL("$root/$path").openConnection() as HttpURLConnection).apply {
             requestMethod = method
             connectTimeout = 15000
             readTimeout = 30000
             setRequestProperty("Accept", "application/json")
             setRequestProperty("Cache-Control", "no-store")
+            if (bearer != null) setRequestProperty("Authorization", "Bearer $bearer")
             if (payload != null) {
                 doOutput = true
                 setRequestProperty("Content-Type", "application/json; charset=utf-8")
