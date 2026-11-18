@@ -85,6 +85,7 @@ fun ResidentSignupWizard(
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("") }
     var verifiedPhone by remember { mutableStateOf("") }
+    var boardAccessToken by remember { mutableStateOf("") }
 
     fun action(block: suspend () -> Unit) {
         if (busy) return
@@ -254,6 +255,7 @@ fun ResidentSignupWizard(
                                     !result.optBoolean("verified", false))
                                     throw IllegalStateException("Verification code was not accepted.")
                                 verifiedPhone = phone
+                                boardAccessToken = result.optString("board_access_token", "")
                                 val existing = ClubhouseApi.residentLookupAfterVerification(phone)
                                 val resident = existing?.optJSONObject("resident")
                                 if ((resident?.optInt("id", 0) ?: 0) > 0) {
@@ -284,7 +286,8 @@ fun ResidentSignupWizard(
                                     accountType = "resident", residentId = id,
                                     displayName = "${first.trim()} ${last.trim()}",
                                     neighborhoodName = resident?.optString("neighborhood_name", "")
-                                        ?.takeUnless { it == "null" }.orEmpty()
+                                        ?.takeUnless { it == "null" }.orEmpty(),
+                                    boardAccessToken = boardAccessToken
                                 ))
                             }
                         }
