@@ -31,11 +31,9 @@ private val rosterBg = Brush.verticalGradient(listOf(Color(0xFF00343D),Color(0xF
  * navigation/dismissal; server-side authorization remains authoritative.
  */
 @Composable
-fun BoardResidentRoster(boardId: Int, onClose: () -> Unit) {
+fun BoardResidentRoster(boardId: Int, boardToken: String, onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
-    var token by remember(boardId) { mutableStateOf("") }
-    var code by remember { mutableStateOf("") }
-    var sent by remember { mutableStateOf(false) }
+    val token = boardToken
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     var residents by remember(boardId) { mutableStateOf<List<JSONObject>>(emptyList()) }
@@ -59,11 +57,14 @@ fun BoardResidentRoster(boardId: Int, onClose: () -> Unit) {
                 residentInviteCode = response.optJSONObject("community")?.optString("invite_code").orEmpty()
             } catch (ex: Exception) {
                 if (ex is ApiException && (ex.status == 401 || ex.status == 403)) {
-                    token = ""; sent = false; residents = emptyList()
+                    residents = emptyList()
                 }
                 error = ex.message ?: "Unable to load HOA residents"
             } finally {busy = false}
         }
+    }
+    LaunchedEffect(boardId, token) {
+        if (token.isNotBlank()) load()
     }
     if (showImportDirectory && token.isNotBlank()) {
         BoardResidentDirectoryImport(
@@ -84,47 +85,11 @@ fun BoardResidentRoster(boardId: Int, onClose: () -> Unit) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("HOA Residents",style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,modifier = Modifier.weight(1f))
-            TextButton(onClick = {token = ""; onClose()}) { Text("Close",color=rosterCyan) }
+            TextButton(onClick = onClose) { Text("Close",color=rosterCyan) }
         }
         if (token.isBlank()) {
-            Text("Verify your board member phone to manage residents in your community. Access expires after 30 minutes.",
-                color = Color.White.copy(alpha=.8f))
-            if (sent) {
-                OutlinedTextField(value=code,onValueChange={code=it.filter(Char::isDigit).take(10)},
-                    label={Text("SMS verification code")},
-                    keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number),
-                    singleLine=true,modifier=Modifier.fillMaxWidth())
-                Button(onClick={
-                    scope.launch {
-                        busy=true; error=""
-                        try {
-                            val response=ClubhouseApi.boardRosterVerify(boardId, code)
-                            token=response.optString("access_token")
-                            if(token.isBlank()) error="Verification did not return a session"
-                            else {
-                                val list=ClubhouseApi.boardRosterList(boardId,token)
-                                val arr=list.optJSONArray("residents") ?: JSONArray()
-                                residents=(0 until arr.length()).mapNotNull(arr::optJSONObject)
-                                communityName=list.optJSONObject("community")?.optString("neighborhood_name").orEmpty()
-                                residentInviteCode=list.optJSONObject("community")?.optString("invite_code").orEmpty()
-                            }
-                        } catch(ex:Exception){error=ex.message ?: "Verification failed"}
-                        finally {busy=false}
-                    }
-                },enabled=!busy && code.length>=4,modifier=Modifier.fillMaxWidth()) {
-                    Text("Verify & Open Resident Directory")
-                }
-            }
-            OutlinedButton(onClick={
-                scope.launch {
-                    busy=true;error=""
-                    try{ClubhouseApi.boardRosterStart(boardId);sent=true}
-                    catch(ex:Exception){error=ex.message ?: "Unable to send code"}
-                    finally{busy=false}
-                }
-            },enabled=!busy,modifier=Modifier.fillMaxWidth()) {
-                Text(if(sent)"Resend verification code" else "Send Board Verification Code")
-            }
+            Text("Your current sign-in does not include board authorization. Sign in as the board member using the normal app login.",
+                color = Color.White.copy(alpha = 0.8f))
         } else {
             Text(if (communityName.isBlank()) "Community resident invite code" else "$communityName resident invite code",
                 style = MaterialTheme.typography.titleSmall, color = Color.White)
@@ -263,7 +228,7 @@ fun BoardResidentRoster(boardId: Int, onClose: () -> Unit) {
                                 residentInviteCode = list.optJSONObject("community")?.optString("invite_code").orEmpty()
                             } catch (ex: Exception) {
                                 if (ex is ApiException && (ex.status == 401 || ex.status == 403)) {
-                                    token = ""; sent = false; showAddResident = false
+                                    showAddResident = false
                                 }
                                 error = ex.message ?: "Unable to add resident"
                             } finally {
