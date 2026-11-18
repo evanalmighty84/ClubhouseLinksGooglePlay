@@ -63,6 +63,7 @@ class MainActivity : ComponentActivity() {
                     supportModeActive = supportResident != null,
                     supportError = supportError,
                     onExitSupport = exitSupport,
+                    onSwitchResident = { page = "Support Search" },
                     onSupportSelected = { selected ->
                         supportResident = selected
                         supportError = ""
@@ -85,6 +86,7 @@ private fun ClubhouseNavigation(
     supportModeActive: Boolean,
     supportError: String,
     onExitSupport: () -> Unit,
+    onSwitchResident: () -> Unit,
     onSupportSelected: (AccountSession) -> Unit,
     page: String,
     onPage: (String) -> Unit,
@@ -95,7 +97,7 @@ private fun ClubhouseNavigation(
     else listOf("Home","Events","Submit Job","Request Service")
     Scaffold(
         topBar = {
-            Surface(color = ClubhouseNavy, modifier = Modifier.statusBarsPadding()) {
+            if (!session.isResident) Surface(color = ClubhouseNavy, modifier = Modifier.statusBarsPadding()) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("CLUBHOUSE LINKS", color = ClubhouseCyan, fontWeight = FontWeight.Black)
@@ -140,27 +142,59 @@ private fun ClubhouseNavigation(
         Column(Modifier.fillMaxSize().padding(inner)) {
             if (supportError.isNotBlank()) Text(supportError, color = MaterialTheme.colorScheme.error)
             if (supportModeActive) {
-                Surface(color = Color(0xFF203851), modifier = Modifier.fillMaxWidth()) {
-                    Row(Modifier.padding(horizontal = 15.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("VIEWING AS RESIDENT · READ ONLY",
-                                color = ClubhouseCyan,
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.5.dp, ClubhouseOrange.copy(alpha = 0.8f)),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0A121A))
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(15.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically) {
+                            Text("🛠  SUPPORT MODE", color = ClubhouseOrange,
                                 fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.labelLarge)
-                            Text(session.displayName.ifBlank { "Resident" } +
-                                " · " + session.neighborhoodName.takeUnless { it.equals("null", ignoreCase = true) }.orEmpty()
-                                    .ifBlank { "Resident account" },
-                                style = MaterialTheme.typography.labelMedium)
+                                style = MaterialTheme.typography.titleMedium)
+                            Icon(Icons.Default.Circle, contentDescription = "Support active",
+                                tint = Color(0xFF34C759), modifier = Modifier.size(13.dp))
                         }
-                        TextButton(onClick = onExitSupport) { Text("Return to Aspen") }
+                        Text("Viewing ${session.displayName}",
+                            color = Color.White, fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        Text("Supporting as ${vendorSession.displayName.ifBlank { "Vendor" }}",
+                            color = Color.White.copy(alpha = 0.65f),
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Button(onClick = onSwitchResident,
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFA62FC1))) {
+                                Text("Switch Resident", maxLines = 1)
+                            }
+                            Button(onClick = onExitSupport,
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = ClubhouseOrange)) {
+                                Text("Return to Aspen", maxLines = 1)
+                            }
+                        }
                     }
                 }
             }
             Box(Modifier.weight(1f)) {
             when(page) {
                 "Home" -> if(session.isResident) ResidentParityHome(session, onPage, readOnly=supportModeActive) else NativeHome(session, onPage)
-                "Account" -> AccountScreen(session, onLogin, onSignOut, readOnly=supportModeActive)
+                "Account" -> if (session.isResident) {
+                    ResidentAccountSettings(
+                        session = session, readOnly = supportModeActive,
+                        onClose = { onPage("Home") }
+                    )
+                } else AccountScreen(session, onLogin, onSignOut, readOnly=supportModeActive)
                 "QA Preview" -> if (BuildConfig.DEBUG) {
                     QaPreviewScreen(
                         onClose = { onPage("Home") },
@@ -177,7 +211,7 @@ private fun ClubhouseNavigation(
                 "Services" -> ServicesScreen(session, onPage, readOnly = supportModeActive)
                 "Requests" -> RequestsScreen(session, onPage, readOnly = supportModeActive)
                 "Street Fair" -> StreetFairScreen(session, onPage)
-                "Support Search" -> if (BuildConfig.DEBUG && vendorSession.isVendor && !supportModeActive) {
+                "Support Search" -> if (BuildConfig.DEBUG && vendorSession.isVendor) {
                     SupportResidentScreen(
                         vendor=vendorSession,
                         onClose={onPage("Home")},
