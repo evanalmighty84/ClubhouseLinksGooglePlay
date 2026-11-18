@@ -266,7 +266,8 @@ fun ResidentSignupWizard(
                                             resident.optString("first_name"),
                                             resident.optString("last_name")).joinToString(" ").trim(),
                                         neighborhoodName = resident.optString("neighborhood_name", "")
-                                            .takeUnless { it == "null" }.orEmpty()
+                                            .takeUnless { it == "null" }.orEmpty(),
+                                        boardAccessToken = boardAccessToken
                                     ))
                                 } else if (existing == null) {
                                     step = 5
