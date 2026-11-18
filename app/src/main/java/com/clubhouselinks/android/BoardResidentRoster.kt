@@ -3,6 +3,8 @@ package com.clubhouselinks.android
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,6 +43,8 @@ fun BoardResidentRoster(boardId: Int, onClose: () -> Unit) {
     var communityName by remember(boardId) { mutableStateOf("") }
     var residentInviteCode by remember(boardId) { mutableStateOf("") }
     var selected by remember { mutableStateOf<JSONObject?>(null) }
+    var showAddResident by remember { mutableStateOf(false) }
+    var successMessage by remember { mutableStateOf("") }
 
     fun load() {
         if (token.isBlank() || busy) return
@@ -117,6 +121,11 @@ fun BoardResidentRoster(boardId: Int, onClose: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
+            Button(
+                onClick = { showAddResident = true; error = ""; successMessage = "" },
+                enabled = !busy && residentInviteCode.isNotBlank(),
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Add Resident") }
             OutlinedTextField(value=search,onValueChange={search=it},
                 label={Text("Search residents by name or ID")},
                 modifier=Modifier.fillMaxWidth(),singleLine=true)
@@ -155,6 +164,99 @@ fun BoardResidentRoster(boardId: Int, onClose: () -> Unit) {
         }
         if(busy) LinearProgressIndicator(modifier=Modifier.fillMaxWidth())
         if(error.isNotBlank()) Text(error,color=Color(0xFFFFB6AC))
+        if(successMessage.isNotBlank()) Text(successMessage,color=Color(0xFF9CE2B4))
+    }
+    if (showAddResident && token.isNotBlank()) {
+        var firstName by remember { mutableStateOf("") }
+        var lastName by remember { mutableStateOf("") }
+        var mobile by remember { mutableStateOf("") }
+        var homeAddress by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { if (!busy) showAddResident = false },
+            title = { Text("Add Community Resident") },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = residentInviteCode,
+                        onValueChange = {},
+                        enabled = false,
+                        label = { Text("Community Invite Code") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = firstName,
+                        onValueChange = { firstName = it.take(80) },
+                        label = { Text("First Name") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = lastName,
+                        onValueChange = { lastName = it.take(80) },
+                        label = { Text("Last Name") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = mobile,
+                        onValueChange = { mobile = it.filter(Char::isDigit).take(10) },
+                        label = { Text("Mobile Number") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = homeAddress,
+                        onValueChange = { homeAddress = it.take(500) },
+                        label = { Text("Home Address, City, State, ZIP") },
+                        minLines = 2
+                    )
+                    Text("Community membership is approved immediately. The resident will verify their own phone when signing in.",
+                        style = MaterialTheme.typography.bodySmall)
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !busy && residentInviteCode.isNotBlank() &&
+                        firstName.isNotBlank() && lastName.isNotBlank() &&
+                        mobile.length == 10 && homeAddress.isNotBlank(),
+                    onClick = {
+                        scope.launch {
+                            busy = true
+                            error = ""
+                            successMessage = ""
+                            try {
+                                ClubhouseApi.boardRosterCreate(
+                                    boardId, token,
+                                    JSONObject()
+                                        .put("first_name", firstName.trim())
+                                        .put("last_name", lastName.trim())
+                                        .put("phone", mobile)
+                                        .put("address", homeAddress.trim())
+                                )
+                                showAddResident = false
+                                successMessage = "Resident added and approved. Phone verification remains required."
+                                val list = ClubhouseApi.boardRosterList(boardId, token)
+                                val arr = list.optJSONArray("residents") ?: JSONArray()
+                                residents = (0 until arr.length()).mapNotNull(arr::optJSONObject)
+                                communityName = list.optJSONObject("community")?.optString("neighborhood_name").orEmpty()
+                                residentInviteCode = list.optJSONObject("community")?.optString("invite_code").orEmpty()
+                            } catch (ex: Exception) {
+                                if (ex is ApiException && (ex.status == 401 || ex.status == 403)) {
+                                    token = ""; sent = false; showAddResident = false
+                                }
+                                error = ex.message ?: "Unable to add resident"
+                            } finally {
+                                busy = false
+                            }
+                        }
+                    }
+                ) { Text("Add & Approve") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddResident = false }, enabled = !busy) { Text("Cancel") }
+            }
+        )
     }
     selected?.let { resident ->
         var first by remember(resident.optInt("id")) { mutableStateOf(resident.optString("first_name")) }
