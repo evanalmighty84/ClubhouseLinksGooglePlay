@@ -167,7 +167,8 @@ fun SupportResidentScreen(
                                 onResidentSelected(AccountSession(
                                     accountType="resident", residentId=residentId,
                                     displayName=residentName,
-                                    neighborhoodName=resident.optString("neighborhood_name")
+                                    neighborhoodName=resident.optString("neighborhood_name", "")
+                                        .takeUnless { it.equals("null", ignoreCase = true) }.orEmpty()
                                 ))
                             }catch(e:Exception){
                                 error=e.message ?: "Unable to open selected resident."
