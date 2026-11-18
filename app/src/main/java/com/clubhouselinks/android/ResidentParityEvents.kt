@@ -308,8 +308,12 @@ private fun HoaEventPublishForm(
     val photoPicker=rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         selectedPhoto=uri
     }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+    // Keep the scroll viewport above the soft keyboard so the Publish button
+    // can be brought fully into view without dismissing the keyboard.
+    Column(Modifier.fillMaxSize()
+        .imePadding()
         .background(Brush.verticalGradient(listOf(Color(0xFF003341),Color(0xFF281039))))
+        .verticalScroll(rememberScrollState())
         .padding(18.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
         Row(verticalAlignment=Alignment.CenterVertically){
             Text("Create New Event",modifier=Modifier.weight(1f),
@@ -375,5 +379,8 @@ private fun HoaEventPublishForm(
                 }
             }
         ){Text(if(saving)"Publishing…" else "Publish Event")}
+        // Additional scroll range lets the last action clear the keyboard,
+        // even on small Android emulators and with the app's bottom tab bar.
+        Spacer(Modifier.height(120.dp))
     }
 }
