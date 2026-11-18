@@ -43,24 +43,37 @@ private fun JSONArray.objects():List<JSONObject> =
 
 private data class NeighborWork(
     val key:String, val vendor:String, val service:String,
-    val picture:String, val resident:String
+    val picture:String, val resident:String,
+    val distanceMiles:Double?, val address:String, val sameHoa:Boolean
 )
 
+/**
+ * The backend's nearby_completed_projects are filtered to the resident's HOA
+ * or within seven miles of the saved residence coordinates. Unlike
+ * signed_up_people, these records include the actual distance in miles.
+ * Only display approved project photos.
+ */
 private fun vendorProjects(vendors:List<JSONObject>):List<NeighborWork> =
     vendors.flatMap { vendor ->
-        val people=vendor.optJSONArray("signed_up_people") ?: JSONArray()
-        people.objects().mapNotNull { person ->
+        val nearby=vendor.optJSONArray("nearby_completed_projects") ?: JSONArray()
+        nearby.objects().mapNotNull { person ->
             val url=person.field("finished_photo_url")
             val approval=person.field("photo_approval_status")
-            if(url.isBlank() || (approval.isNotBlank() && approval!="approved")) null
+            if (url.isBlank() || approval != "approved") null
             else NeighborWork(
-                key="${vendor.optInt("id")}-${person.optInt("id")}",
+                key="${vendor.optInt("id")}-${person.optInt("project_id")}",
                 vendor=vendor.field("company_name"),
                 service=vendor.field("category").ifBlank{"Home Service"},
-                picture=url, resident=person.field("first_name")
+                picture=url,
+                resident=person.field("first_name"),
+                distanceMiles=person.optDouble("distance_miles").takeUnless { it.isNaN() },
+                address=person.field("address"),
+                sameHoa=person.optBoolean("same_hoa", false)
             )
         }
-    }
+    }.distinctBy { it.key }
+        .sortedWith(compareBy<NeighborWork> { it.distanceMiles ?: Double.POSITIVE_INFINITY }
+            .thenBy { it.vendor })
 
 @Composable
 private fun OutlinedNeonPanel(
@@ -139,8 +152,15 @@ fun ResidentParityHome(
         }
     }
     LaunchedEffect(session.residentId){load()}
-    val community=profile?.field("neighborhood_name").orEmpty().ifBlank{session.neighborhoodName}
-        .ifBlank{profile?.field("display_area_name").orEmpty()}.ifBlank{"Your Neighborhood"}
+    val hoaName=profile?.field("neighborhood_name").orEmpty()
+        .ifBlank { session.neighborhoodName.takeUnless { it.equals("null", ignoreCase = true) }.orEmpty() }
+    val community=hoaName.ifBlank{profile?.field("display_area_name").orEmpty()}.ifBlank{"Your Neighborhood"}
+    val hasLocation=profile?.let { p ->
+        p.optDouble("latitude").isFinite() && p.optDouble("longitude").isFinite() &&
+            !p.isNull("latitude") && !p.isNull("longitude")
+    } ?: false
+    val crowleyPark=hoaName.contains("Crowley Park", ignoreCase = true)
+    val nearbyArea=hoaName.isBlank()
     val name=listOf(profile?.field("first_name").orEmpty(),
         profile?.field("last_name").orEmpty()).filter(String::isNotBlank).joinToString(" ")
         .ifBlank{session.displayName}
@@ -267,9 +287,13 @@ fun ResidentParityHome(
             color=Color.White.copy(alpha=0.88f))
 
         OutlinedNeonPanel {
-            Text("$community Projects",style=MaterialTheme.typography.headlineMedium,
+            Text(if(nearbyArea) "Nearby Projects" else "$community Projects",
+                style=MaterialTheme.typography.headlineMedium,
                 fontWeight=FontWeight.Bold)
-            Text("See trusted home service contractors used by neighbors near you in $community.",
+            Text(if(nearbyArea) {
+                if(hasLocation) "See completed home projects within 7 miles of your address."
+                else "Add a verified address to find home projects near you."
+            } else "See trusted home service contractors used by neighbors near you in $community.",
                 color=Color.White.copy(alpha=0.78f))
             Text("Service",color=homeGlow,fontWeight=FontWeight.Bold)
             ParitySelector(service,serviceOptions){selected->
@@ -302,17 +326,25 @@ fun ResidentParityHome(
                 Text(vendor,style=MaterialTheme.typography.titleMedium,
                     fontWeight=FontWeight.Bold,color=Color.White)
             }else if(filtered.isEmpty()){
-                val context=LocalContext.current
-                val image=remember{
-                    context.resources.getIdentifier(
-                        "neighborhood_projects_placeholder","drawable",context.packageName)
+                if(crowleyPark){
+                    val image=remember(context){
+                        context.resources.getIdentifier(
+                            "neighborhood_projects_placeholder","drawable",context.packageName)
+                    }
+                    if(image!=0) Image(painterResource(image),
+                        contentDescription="Crowley Park project placeholder",
+                        modifier=Modifier.fillMaxWidth().height(185.dp)
+                            .clip(RoundedCornerShape(17.dp)),contentScale=ContentScale.Crop)
+                }else{
+                    Icon(Icons.Default.LocationOn,
+                        contentDescription=null, tint=homeGlow,
+                        modifier=Modifier.fillMaxWidth().height(86.dp))
                 }
-                if(image!=0) Image(painterResource(image),
-                    contentDescription="Neighborhood project placeholder",
-                    modifier=Modifier.fillMaxWidth().height(185.dp)
-                        .clip(RoundedCornerShape(17.dp)),contentScale=ContentScale.Crop)
-                Text("This is where you will see your neighbors' projects when they have work done.",
-                    modifier=Modifier.fillMaxWidth(),textAlign=TextAlign.Center,
+                Text(when {
+                    nearbyArea && !hasLocation -> "Add your address to see nearby completed projects."
+                    nearbyArea -> "No approved project photos within 7 miles yet."
+                    else -> "No completed neighbor projects are available yet."
+                }, modifier=Modifier.fillMaxWidth(),textAlign=TextAlign.Center,
                     color=Color.White.copy(alpha=0.8f))
             }else{
                 val pager=rememberPagerState(pageCount={filtered.size})
@@ -325,6 +357,15 @@ fun ResidentParityHome(
                         Text(work.service,style=MaterialTheme.typography.titleMedium,
                             fontWeight=FontWeight.Bold)
                         Text(work.vendor,color=homeGlow)
+                        if(work.distanceMiles != null){
+                            Text(String.format(java.util.Locale.US, "%.1f miles away",work.distanceMiles),
+                                style=MaterialTheme.typography.labelLarge,
+                                color=Color.White.copy(alpha=0.82f))
+                        }
+                        if(work.sameHoa && work.address.isNotBlank()){
+                            Text(work.address,color=Color.White.copy(alpha=0.7f),
+                                style=MaterialTheme.typography.bodySmall)
+                        }
                     }
                 }
                 Text("${pager.currentPage+1} / ${filtered.size}",
