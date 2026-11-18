@@ -1,11 +1,18 @@
 package com.clubhouselinks.android
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -19,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import org.json.JSONObject
 
 // Native Android counterparts to iOS HomeView's role-specific destinations.
@@ -66,25 +74,134 @@ private fun PortedAction(title: String, summary: String, onClick: () -> Unit) {
     }
 }
 
+/**
+ * Faithful Android counterpart of iOS HomeView.homeContent and
+ * HomeIntroImageView. Both assets are checked into drawable-nodpi.
+ */
+@Composable
+private fun GuestHomeIntroImage() {
+    var showClubhouse by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(1_500)
+        showClubhouse = true
+    }
+    Crossfade(
+        targetState = showClubhouse,
+        animationSpec = tween(800),
+        label = "clubhouse-intro-image",
+        modifier = Modifier.fillMaxWidth().height(250.dp)
+    ) { showingClubhouse ->
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            if (showingClubhouse) {
+                Image(
+                    painter = painterResource(R.drawable.hoa),
+                    contentDescription = "Neon Clubhouse Links community clubhouse",
+                    modifier = Modifier.fillMaxWidth()
+                        .clip(RoundedCornerShape(24.dp))
+                        .border(
+                            BorderStroke(1.5.dp, Brush.linearGradient(
+                                listOf(Color(0xFF00D5EA), Color(0xFFFF9A24), Color(0xFFD235DE))
+                            )),
+                            RoundedCornerShape(24.dp)
+                        ),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                Image(
+                    painter = painterResource(R.drawable.clubhouse_app_icon),
+                    contentDescription = "Clubhouse Links logo",
+                    modifier = Modifier.size(190.dp)
+                        .shadow(18.dp, RoundedCornerShape(38.dp), ambientColor = ClubhouseCyan)
+                        .clip(RoundedCornerShape(38.dp)),
+                    contentScale = ContentScale.Fit
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GuestNeonCard(
+    title: String,
+    description: String,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .border(1.dp, ClubhouseCyan.copy(alpha = 0.45f), RoundedCornerShape(22.dp))
+            .background(
+                Brush.linearGradient(
+                    listOf(Color(0xFF12293C), Color(0xFF231C38), Color(0xFF32163D))
+                )
+            )
+            .clickable(onClick = onClick)
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(title, color = Color.White,
+            style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(description, color = Color.White.copy(alpha = 0.72f),
+            style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
 @Composable
 private fun NativeGuestHome(navigate: (String) -> Unit) {
     NativeHomeColumn {
-        PortedArtwork("clubhouse_app_icon", "Clubhouse Links mascot")
-        Text("Clubhouse Links", style=MaterialTheme.typography.headlineLarge,
-            fontWeight=FontWeight.Bold, textAlign=TextAlign.Center,modifier=Modifier.fillMaxWidth())
-        Text("Home Services", color=ClubhouseCyan, style=MaterialTheme.typography.titleLarge,
-            textAlign=TextAlign.Center,modifier=Modifier.fillMaxWidth())
-        Text("Your Local Home Service Referral Network",textAlign=TextAlign.Center,
-            modifier=Modifier.fillMaxWidth())
-        Button(onClick={navigate("Account")},modifier=Modifier.fillMaxWidth()){Text("Create Account")}
-        PortedAction("See Completed Projects By Neighbors",
-            "Choose a home project or repair specialist by seeing who your neighbors have used.",
-            {navigate("Account")})
-        PortedAction("Submit Vendor Requests",
-            "Send maintenance requests or contact reputable local vendors.",
-            {navigate("Account")})
-        PortedAction("View Vendors","Browse local home-service providers.",{navigate("Services")})
-        PortedAction("Upcoming Events","See neighborhood events, gatherings and meetings.",{navigate("Events")})
+        GuestHomeIntroImage()
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text("Clubhouse Links", style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold, color = Color.White)
+            Text("Home Services", color = ClubhouseCyan,
+                style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text("Your Local Home Service Referral Network",
+                color = Color.White.copy(alpha = 0.72f),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyMedium)
+        }
+
+        // iOS HomeView's Create Account button uses a purple → orange gradient.
+        Box(
+            modifier = Modifier.fillMaxWidth()
+                .shadow(12.dp, RoundedCornerShape(18.dp),
+                    ambientColor = ClubhouseCyan.copy(alpha = 0.50f))
+                .clip(RoundedCornerShape(18.dp))
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(Color(0xFFB82BD3), Color(0xFFFF8736))
+                    )
+                )
+                .clickable { navigate("Account") }
+                .padding(vertical = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Create Account", color = Color.White,
+                style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        }
+
+        GuestNeonCard(
+            "See Completed Projects By Neighbors",
+            "Choose your next home project or repair specialist by seeing who your neighbors have used"
+        ) { navigate("Account") }
+        GuestNeonCard(
+            "Submit Vendor Requests",
+            "Send maintenance requests, report issues, or contact reputable local vendors."
+        ) { navigate("Account") }
+        GuestNeonCard(
+            "View Vendors",
+            "Browse trusted local contractors, home service providers, and HOA or neighborhood-reviewed businesses."
+        ) { navigate("Services") }
+        GuestNeonCard(
+            "Upcoming Events",
+            "See social events, meetings, holiday celebrations, and other activities."
+        ) { navigate("Events") }
+        Spacer(Modifier.height(90.dp))
     }
 }
 
