@@ -135,7 +135,11 @@ fun ResidentParityEvents(session:AccountSession,readOnly:Boolean=false){
     val past=events.filter{(it.eventInstant()?.toLocalDate() ?: today)<today}
         .sortedByDescending{it.eventInstant()}
     if(showRoster && canManage) {
-        BoardResidentRoster(boardId=session.residentId,onClose={showRoster=false})
+        BoardResidentRoster(
+            boardId = session.residentId,
+            boardToken = if (readOnly) "" else session.boardAccessToken,
+            onClose = { showRoster = false }
+        )
         return
     }
     if(showCreate && canManage){
