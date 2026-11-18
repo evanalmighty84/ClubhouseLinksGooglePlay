@@ -66,6 +66,8 @@ object ClubhouseApi {
             JSONObject().put("code", code))
     suspend fun boardRosterList(boardId: Int, token: String) =
         request("GET", "hoaBoardMembers/$boardId/resident-roster", null, token)
+    suspend fun boardRosterCreate(boardId: Int, token: String, resident: JSONObject) =
+        request("POST", "hoaBoardMembers/$boardId/resident-roster", resident, token)
     suspend fun boardRosterUpdate(boardId: Int, token: String, residentId: Int, changes: JSONObject) =
         request("PATCH", "hoaBoardMembers/$boardId/resident-roster/$residentId", changes, token)
     suspend fun submitCompletedProject(payload: JSONObject): JSONObject =
