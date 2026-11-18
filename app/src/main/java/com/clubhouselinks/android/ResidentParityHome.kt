@@ -165,12 +165,12 @@ fun ResidentParityHome(
         profile?.field("last_name").orEmpty()).filter(String::isNotBlank).joinToString(" ")
         .ifBlank{session.displayName}
     val works=remember(vendors){vendorProjects(vendors)}
-    var service by remember(session.residentId){mutableStateOf("All Services")}
+    var service by remember(session.residentId){mutableStateOf("Nearby Neighbors")}
     var vendor by remember(session.residentId){mutableStateOf("All Vendors")}
     // Match iOS: vendor filters are built from the live directory, not just
     // vendors who already have approved project photos.
     val serviceOptions=remember(vendors){
-        listOf("All Services")+
+        listOf("Nearby Neighbors")+
             vendors.flatMap { item ->
                 val categories=item.optJSONArray("categories") ?: JSONArray()
                 (0 until categories.length()).mapNotNull{categories.optString(it)}+
@@ -180,7 +180,7 @@ fun ResidentParityHome(
     val vendorOptions=remember(vendors,service) {
         listOf("All Vendors")+
             vendors.filter { item ->
-                if(service=="All Services") true
+                if(service=="Nearby Neighbors") true
                 else {
                     val categories=item.optJSONArray("categories") ?: JSONArray()
                     item.field("category")==service ||
@@ -195,7 +195,7 @@ fun ResidentParityHome(
             ?.takeIf { it.startsWith("https://") || it.startsWith("http://") }
     }
     val filtered=works.filter{
-        (service=="All Services"||it.service==service) && (vendor=="All Vendors"||it.vendor==vendor)
+        (service=="Nearby Neighbors"||it.service==service) && (vendor=="All Vendors"||it.vendor==vendor)
     }
     Column(
         Modifier.fillMaxSize().background(Brush.verticalGradient(
@@ -287,7 +287,7 @@ fun ResidentParityHome(
             color=Color.White.copy(alpha=0.88f))
 
         OutlinedNeonPanel {
-            Text(if(nearbyArea) "Nearby Projects" else "$community Projects",
+            Text("Who My Neighbors Are Using",
                 style=MaterialTheme.typography.headlineMedium,
                 fontWeight=FontWeight.Bold)
             Text(if(nearbyArea) {
