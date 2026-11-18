@@ -199,8 +199,27 @@ fun ResidentParityHome(
                     Text(community,style=MaterialTheme.typography.titleLarge,
                         fontWeight=FontWeight.Bold,color=Color.White)
                 }
-                if(!readOnly){
-                    FilledTonalButton(onClick={navigate("Account")}) {Text("Account")}
+                Column(horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    IconButton(
+                        onClick = { navigate("Account") },
+                        modifier = Modifier.size(62.dp)
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(homeGlow.copy(alpha = 0.34f),
+                                        homePurple.copy(alpha = 0.46f))
+                                )
+                            )
+                    ) {
+                        Icon(Icons.Default.Tune,
+                            contentDescription = "Account Settings",
+                            tint = Color.White,
+                            modifier = Modifier.size(29.dp))
+                    }
+                    Text("Account", color = Color.White,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold)
                 }
             }
             val updateItems=remember(events,announcements){
