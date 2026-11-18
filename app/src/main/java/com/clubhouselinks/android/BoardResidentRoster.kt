@@ -44,6 +44,7 @@ fun BoardResidentRoster(boardId: Int, onClose: () -> Unit) {
     var residentInviteCode by remember(boardId) { mutableStateOf("") }
     var selected by remember { mutableStateOf<JSONObject?>(null) }
     var showAddResident by remember { mutableStateOf(false) }
+    var showImportDirectory by remember { mutableStateOf(false) }
     var successMessage by remember { mutableStateOf("") }
 
     fun load() {
@@ -63,6 +64,20 @@ fun BoardResidentRoster(boardId: Int, onClose: () -> Unit) {
                 error = ex.message ?: "Unable to load HOA residents"
             } finally {busy = false}
         }
+    }
+    if (showImportDirectory && token.isNotBlank()) {
+        BoardResidentDirectoryImport(
+            boardId = boardId,
+            token = token,
+            community = communityName,
+            inviteCode = residentInviteCode,
+            onClose = { showImportDirectory = false },
+            onImported = {
+                showImportDirectory = false
+                load()
+            }
+        )
+        return
     }
     Column(Modifier.fillMaxSize().background(rosterBg).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -126,6 +141,11 @@ fun BoardResidentRoster(boardId: Int, onClose: () -> Unit) {
                 enabled = !busy && residentInviteCode.isNotBlank(),
                 modifier = Modifier.fillMaxWidth()
             ) { Text("Add Resident") }
+            OutlinedButton(
+                onClick = { showImportDirectory = true; error = ""; successMessage = "" },
+                enabled = !busy && residentInviteCode.isNotBlank(),
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Upload Resident Directory") }
             OutlinedTextField(value=search,onValueChange={search=it},
                 label={Text("Search residents by name or ID")},
                 modifier=Modifier.fillMaxWidth(),singleLine=true)
