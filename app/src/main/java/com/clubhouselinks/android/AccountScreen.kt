@@ -32,6 +32,17 @@ fun AccountScreen(session: AccountSession, onLogin: (AccountSession) -> Unit, on
         }
         return
     }
+    var vendorSignIn by remember { mutableStateOf(false) }
+    if (!vendorSignIn) {
+        ResidentSignupWizard(
+            supportTestMode = false,
+            onResidentCreated = onLogin,
+            onCancel = onSignOut,
+            onVendorLogin = { vendorSignIn = true }
+        )
+        return
+    }
+
     val scope = rememberCoroutineScope()
     var phone by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
@@ -44,7 +55,7 @@ fun AccountScreen(session: AccountSession, onLogin: (AccountSession) -> Unit, on
     var lastName by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var inviteCode by remember { mutableStateOf("") }
-    var account by remember { mutableStateOf("resident") }
+    var account by remember { mutableStateOf("vendor") }
     val validPhone = phone.length == 10
     fun launchAction(action: suspend () -> Unit) {
         if(!busy) scope.launch { busy = true; message = ""; try { action() } catch(e: Exception){ message=e.message ?: "Something went wrong" } finally {busy=false} }
@@ -52,6 +63,7 @@ fun AccountScreen(session: AccountSession, onLogin: (AccountSession) -> Unit, on
     ContentColumn {
         Text("Join Clubhouse Links", style=MaterialTheme.typography.headlineMedium, fontWeight=FontWeight.Bold)
         Text("Verify your mobile number before joining or accessing your vendor profile.")
+        TextButton(onClick = { vendorSignIn = false }) { Text("‹ Back to Resident Signup") }
         SingleChoiceSegment(account, onChange = {
             account=it
             verified=false
