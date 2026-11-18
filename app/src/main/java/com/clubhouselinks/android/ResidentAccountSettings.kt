@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import org.json.JSONObject
 
 private val settingsCyan = Color(0xFF16C6E0)
@@ -106,6 +107,36 @@ fun ResidentAccountSettings(
     }
 
     LaunchedEffect(session.residentId) { reload() }
+
+    // A newly created resident may open this screen before Codemagic finishes.
+    // Refresh only house-image fields; never overwrite locally edited form data.
+    // The coroutine is cancelled when this screen closes or the resident changes.
+    LaunchedEffect(session.residentId, profile?.safeText("address")) {
+        val initial = profile ?: return@LaunchedEffect
+        if (initial.safeText("address").isBlank() ||
+            initial.safeText("house_image_url").isNotBlank()) return@LaunchedEffect
+
+        // 36 checks at 5 seconds = 3 minutes, covering cold Codemagic starts,
+        // while avoiding unlimited background polling and API cost.
+        repeat(36) {
+            delay(5_000)
+            val current = profile ?: return@LaunchedEffect
+            if (current.safeText("house_image_url").isNotBlank() ||
+                current.safeText("address") != initial.safeText("address")) return@LaunchedEffect
+            try {
+                val response = ClubhouseApi.residentProfile(session.residentId)
+                val fresh = response.optJSONObject("resident") ?: response
+                if (fresh.safeText("address") != initial.safeText("address"))
+                    return@LaunchedEffect
+                if (fresh.safeText("house_image_url").isNotBlank()) {
+                    profile = fresh // Compose recomposes Street View with the new Cloudinary URL
+                    return@LaunchedEffect
+                }
+            } catch (_: Exception) {
+                // Temporary network failures do not interrupt signup or edits.
+            }
+        }
+    }
     Column(Modifier.fillMaxSize().background(settingsBackdrop)
         .verticalScroll(rememberScrollState())
         .padding(horizontal = 18.dp, vertical = 20.dp),
@@ -189,6 +220,17 @@ fun ResidentAccountSettings(
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Home Street View", style = MaterialTheme.typography.titleLarge,
                             color = Color.White, fontWeight = FontWeight.Bold)
+                        if (resident.safeText("house_image_url").isBlank() &&
+                            !resident.isNull("latitude") && !resident.isNull("longitude")) {
+                            Row(verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                                CircularProgressIndicator(modifier = Modifier.size(17.dp),
+                                    color = settingsCyan, strokeWidth = 2.dp)
+                                Text("Preparing your home image… It will appear automatically.",
+                                    color = settingsCyan,
+                                    style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
                         ResidentStreetViewCard(resident)
                         Text("Saved property imagery, when available. Synthetic testing images are labeled.",
                             color = Color.White.copy(alpha = 0.65f),
