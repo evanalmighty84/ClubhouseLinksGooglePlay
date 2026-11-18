@@ -197,6 +197,27 @@ fun ResidentParityHome(
     val filtered=works.filter{
         (service=="Nearby Neighbors"||it.service==service) && (vendor=="All Vendors"||it.vendor==vendor)
     }
+    var openUpdate by remember(session.residentId) { mutableStateOf<Triple<String,String,String>?>(null) }
+    openUpdate?.let { item ->
+        AlertDialog(
+            onDismissRequest = { openUpdate = null },
+            title = { Text(item.first) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (item.third.startsWith("https://")) {
+                        AsyncImage(model = item.third, contentDescription = "Community announcement QR code",
+                            modifier = Modifier.fillMaxWidth().height(230.dp),
+                            contentScale = ContentScale.Fit)
+                    }
+                    Text(item.second)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { openUpdate = null }) { Text("Close") }
+            }
+        )
+    }
     Column(
         Modifier.fillMaxSize().background(Brush.verticalGradient(
             listOf(Color(0xFF002D37),homeNight,Color(0xFF30083E))))
@@ -261,11 +282,13 @@ fun ResidentParityHome(
                         verticalArrangement=Arrangement.spacedBy(10.dp)){
                         if(item.third.startsWith("https://")){
                             AsyncImage(model=item.third,contentDescription=item.first,
-                                modifier=Modifier.fillMaxWidth().height(120.dp)
-                                    .clip(RoundedCornerShape(14.dp)),contentScale=ContentScale.Crop)
+                                modifier=Modifier.fillMaxWidth().height(95.dp)
+                                    .clip(RoundedCornerShape(14.dp)),contentScale=ContentScale.Fit)
                         }
-                        Text(item.first,style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
-                        Text(item.second,style=MaterialTheme.typography.bodySmall,maxLines=4)
+                        Text(item.first,style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold,
+                            maxLines=2)
+                        Text(item.second,style=MaterialTheme.typography.bodySmall,maxLines=2)
+                        TextButton(onClick={openUpdate=item}) { Text("Read full update") }
                     }
                 }
             }
