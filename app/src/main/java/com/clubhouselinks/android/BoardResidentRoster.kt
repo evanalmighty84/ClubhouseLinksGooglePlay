@@ -38,6 +38,8 @@ fun BoardResidentRoster(boardId: Int, onClose: () -> Unit) {
     var error by remember { mutableStateOf("") }
     var residents by remember(boardId) { mutableStateOf<List<JSONObject>>(emptyList()) }
     var search by remember { mutableStateOf("") }
+    var communityName by remember(boardId) { mutableStateOf("") }
+    var residentInviteCode by remember(boardId) { mutableStateOf("") }
     var selected by remember { mutableStateOf<JSONObject?>(null) }
 
     fun load() {
@@ -48,6 +50,8 @@ fun BoardResidentRoster(boardId: Int, onClose: () -> Unit) {
                 val response = ClubhouseApi.boardRosterList(boardId, token)
                 val array = response.optJSONArray("residents") ?: JSONArray()
                 residents = (0 until array.length()).mapNotNull(array::optJSONObject)
+                communityName = response.optJSONObject("community")?.optString("neighborhood_name").orEmpty()
+                residentInviteCode = response.optJSONObject("community")?.optString("invite_code").orEmpty()
             } catch (ex: Exception) {
                 if (ex is ApiException && (ex.status == 401 || ex.status == 403)) {
                     token = ""; sent = false; residents = emptyList()
@@ -82,6 +86,8 @@ fun BoardResidentRoster(boardId: Int, onClose: () -> Unit) {
                                 val list=ClubhouseApi.boardRosterList(boardId,token)
                                 val arr=list.optJSONArray("residents") ?: JSONArray()
                                 residents=(0 until arr.length()).mapNotNull(arr::optJSONObject)
+                                communityName=list.optJSONObject("community")?.optString("neighborhood_name").orEmpty()
+                                residentInviteCode=list.optJSONObject("community")?.optString("invite_code").orEmpty()
                             }
                         } catch(ex:Exception){error=ex.message ?: "Verification failed"}
                         finally {busy=false}
@@ -101,6 +107,16 @@ fun BoardResidentRoster(boardId: Int, onClose: () -> Unit) {
                 Text(if(sent)"Resend verification code" else "Send Board Verification Code")
             }
         } else {
+            Text(if (communityName.isBlank()) "Community resident invite code" else "$communityName resident invite code",
+                style = MaterialTheme.typography.titleSmall, color = Color.White)
+            OutlinedTextField(
+                value = residentInviteCode.ifBlank { "No active resident invite code configured" },
+                onValueChange = {},
+                enabled = false,
+                label = { Text("Resident Invite Code (read-only)") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
             OutlinedTextField(value=search,onValueChange={search=it},
                 label={Text("Search residents by name or ID")},
                 modifier=Modifier.fillMaxWidth(),singleLine=true)
@@ -176,6 +192,8 @@ fun BoardResidentRoster(boardId: Int, onClose: () -> Unit) {
                                 val list=ClubhouseApi.boardRosterList(boardId,token)
                                 val arr=list.optJSONArray("residents") ?: JSONArray()
                                 residents=(0 until arr.length()).mapNotNull(arr::optJSONObject)
+                                communityName=list.optJSONObject("community")?.optString("neighborhood_name").orEmpty()
+                                residentInviteCode=list.optJSONObject("community")?.optString("invite_code").orEmpty()
                             }catch(ex:Exception){error=ex.message ?: "Unable to save changes"}
                             finally{busy=false}
                         }
