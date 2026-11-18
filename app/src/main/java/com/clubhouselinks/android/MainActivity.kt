@@ -190,7 +190,11 @@ private fun ClubhouseNavigation(
             when(page) {
                 "Home" -> if(session.isResident) ResidentParityHome(session, onPage, readOnly=supportModeActive) else NativeHome(session, onPage)
                 "HOA Residents" -> if (session.isResident && session.residentId > 0) {
-                    BoardResidentRoster(boardId = session.residentId, onClose = { onPage("Account") })
+                    BoardResidentRoster(
+                        boardId = session.residentId,
+                        boardToken = if (supportModeActive) "" else session.boardAccessToken,
+                        onClose = { onPage("Account") }
+                    )
                 } else NativeHome(session, onPage)
                 "Account" -> if (session.isResident) {
                     ResidentAccountSettings(
