@@ -1,5 +1,7 @@
 package com.clubhouselinks.android
 
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -13,12 +15,51 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+
+/**
+ * Same waving hard-hat mascot asset used by iOS SignupView, not the
+ * announcement video (which has houses and a megaphone).
+ */
+@Composable
+private fun SignupWavingBird(modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "signup-waving-bird")
+    val tilt by transition.animateFloat(
+        initialValue = -4f, targetValue = 4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(550, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ), label = "bird-wave"
+    )
+    val floatY by transition.animateFloat(
+        initialValue = -7f, targetValue = 7f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ), label = "bird-float"
+    )
+    Image(
+        painter = painterResource(R.drawable.clubhouse_bird_wave_sprite_512),
+        contentDescription = "Clubhouse Links hard-hat bird waving",
+        modifier = modifier.graphicsLayer {
+            rotationZ = tilt
+            translationY = floatY.dp.toPx()
+        },
+        contentScale = ContentScale.Fit
+    )
+}
+
+private val signupActionGradient = Brush.horizontalGradient(
+    listOf(Color(0xFF20C6ED), Color(0xFF8A8FF0), Color(0xFFD02CDC))
+)
 
 /**
  * Android counterpart to iOS SignupView's welcome → first/last/phone/verify/
@@ -90,9 +131,8 @@ fun ResidentSignupWizard(
                 }
             }
         }
-        // The iOS signup screen uses the same Clubhouse Links hard-hat bird.
-        ClubhouseBirdMedia("clubhouse_bird_announcements",
-            Modifier.fillMaxWidth().height(180.dp))
+        // Use the original iOS signup mascot on *every* wizard step.
+        SignupWavingBird(Modifier.fillMaxWidth().height(220.dp))
         Text("Create Your Account", style = MaterialTheme.typography.headlineLarge,
             color = Color.White, fontWeight = FontWeight.Black,
             textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
@@ -249,9 +289,16 @@ fun ResidentSignupWizard(
                             }
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().height(55.dp),
+                    modifier = Modifier.fillMaxWidth().height(55.dp)
+                        .clip(RoundedCornerShape(17.dp))
+                        .background(signupActionGradient),
                     shape = RoundedCornerShape(17.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC930D6))
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        contentColor = Color.White,
+                        disabledContentColor = Color.White.copy(alpha = 0.6f)
+                    )
                 ) {
                     Text(if (busy) "Working…" else when (step) {
                         0 -> "Start Step-by-Step Signup"
