@@ -66,6 +66,13 @@ object ClubhouseApi {
             JSONObject().put("code", code))
     suspend fun boardRosterList(boardId: Int, token: String) =
         request("GET", "hoaBoardMembers/$boardId/resident-roster", null, token)
+    suspend fun boardRosterExtract(boardId: Int, token: String, filename: String, data: ByteArray): JSONObject =
+        request("POST", "hoaBoardMembers/$boardId/resident-roster/extract",
+            JSONObject().put("filename", filename)
+                .put("data_base64", android.util.Base64.encodeToString(data, android.util.Base64.NO_WRAP)), token)
+    suspend fun boardRosterImport(boardId: Int, token: String, residents: JSONArray): JSONObject =
+        request("POST", "hoaBoardMembers/$boardId/resident-roster/import",
+            JSONObject().put("residents", residents), token)
     suspend fun boardRosterCreate(boardId: Int, token: String, resident: JSONObject) =
         request("POST", "hoaBoardMembers/$boardId/resident-roster", resident, token)
     suspend fun boardRosterUpdate(boardId: Int, token: String, residentId: Int, changes: JSONObject) =
