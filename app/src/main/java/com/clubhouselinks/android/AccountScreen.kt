@@ -22,7 +22,10 @@ fun AccountScreen(session: AccountSession, onLogin: (AccountSession) -> Unit, on
         ContentColumn {
             Text("Account Settings", style = MaterialTheme.typography.headlineMedium)
             if(readOnly) Text("Read-only support view — no changes can be made to this resident account.", color=ClubhouseCyan)
-            InfoCard(session.displayName, if(session.isVendor) "Vendor account" else "Resident · ${session.neighborhoodName}")
+            val communityName = session.neighborhoodName
+                .takeUnless { it.equals("null", ignoreCase = true) }.orEmpty()
+                .ifBlank { "Neighborhood not assigned" }
+            InfoCard(session.displayName, if(session.isVendor) "Vendor account" else "Resident · $communityName")
             Text("Account data is provided by the existing Clubhouse Links backend.")
             ProfileDetails(session)
             if(!readOnly) OutlinedButton(onClick = onSignOut) { Text("Sign out on this device") }
