@@ -59,8 +59,10 @@ private fun JSONObject.eventInstant():ZonedDateTime?=eventTime(eText("starts_at"
 private suspend fun eventPhotoBase64(context:android.content.Context,uri:Uri):String =
     withContext(Dispatchers.IO) {
         val bounds=BitmapFactory.Options().apply{inJustDecodeBounds=true}
-        context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it,null,bounds) }
+        val boundsStream=context.contentResolver.openInputStream(uri)
             ?: throw IllegalArgumentException("Unable to open selected photo.")
+        boundsStream.use { BitmapFactory.decodeStream(it,null,bounds) }
+        // inJustDecodeBounds deliberately returns a null bitmap; dimensions are populated.
         require(bounds.outWidth>0 && bounds.outHeight>0){"Invalid event photo."}
         var sample=1
         while(bounds.outWidth/sample>1600 || bounds.outHeight/sample>1600) sample*=2
