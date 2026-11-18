@@ -99,7 +99,9 @@ private fun ClubhouseNavigation(
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("CLUBHOUSE LINKS", color = ClubhouseCyan, fontWeight = FontWeight.Black)
-                        Text(session.neighborhoodName.ifBlank { if (session.isVendor) session.displayName else "Your neighborhood, connected" }, style = MaterialTheme.typography.labelSmall)
+                        Text(session.neighborhoodName.takeUnless { it.equals("null", ignoreCase = true) }.orEmpty()
+                            .ifBlank { if (session.isVendor) session.displayName else "Your neighborhood, connected" },
+                            style = MaterialTheme.typography.labelSmall)
                     }
                     if (supportModeActive) {
                         TextButton(onClick = { onPage("Account") }) { Text("Account") }
@@ -147,7 +149,8 @@ private fun ClubhouseNavigation(
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.labelLarge)
                             Text(session.displayName.ifBlank { "Resident" } +
-                                " · " + session.neighborhoodName,
+                                " · " + session.neighborhoodName.takeUnless { it.equals("null", ignoreCase = true) }.orEmpty()
+                                    .ifBlank { "Resident account" },
                                 style = MaterialTheme.typography.labelMedium)
                         }
                         TextButton(onClick = onExitSupport) { Text("Return to Aspen") }
