@@ -124,6 +124,9 @@ private fun NativeVendorHome(session: AccountSession, navigate: (String) -> Unit
             PortedAction("Switch Resident",
                 "Search for a real resident by name, phone, address or ID. Requires an authorized support device.",
                 {navigate("Support Search")})
+            PortedAction("Test New Resident Signup",
+                "Open the iOS-style signup wizard without replacing the Aspen vendor login.",
+                {navigate("Support Signup")})
             PortedAction("QA Screen Preview",
                 "Sample role views only — never switches real accounts.",{navigate("QA Preview")})
         }
