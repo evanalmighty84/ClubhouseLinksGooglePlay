@@ -106,6 +106,7 @@ fun ResidentParityEvents(session:AccountSession,readOnly:Boolean=false){
     var error by remember(session.residentId){mutableStateOf("")}
     var boardView by remember(session.residentId){mutableStateOf(true)}
     var showCreate by remember{mutableStateOf(false)}
+    var showRoster by remember(session.residentId){mutableStateOf(false)}
     var month by remember{mutableStateOf(YearMonth.now())}
     var selectedDay by remember{mutableStateOf<LocalDate?>(null)}
     val isBoard=profile?.optBoolean("board_of_directors",false)==true
@@ -133,6 +134,10 @@ fun ResidentParityEvents(session:AccountSession,readOnly:Boolean=false){
         .sortedBy{it.eventInstant()}
     val past=events.filter{(it.eventInstant()?.toLocalDate() ?: today)<today}
         .sortedByDescending{it.eventInstant()}
+    if(showRoster && canManage) {
+        BoardResidentRoster(boardId=session.residentId,onClose={showRoster=false})
+        return
+    }
     if(showCreate && canManage){
         HoaEventPublishForm(
             residentId=session.residentId,
@@ -166,6 +171,12 @@ fun ResidentParityEvents(session:AccountSession,readOnly:Boolean=false){
                         Text("Publishing an event adds it to your neighborhood calendar and sends a push notification to registered residents in your community.")
                         Text("You can include a photo, description, date, time, and location.",
                             color=eventCyan,fontWeight=FontWeight.Bold)
+                    }
+                    OutlinedButton(onClick={showRoster=true},enabled=canManage,
+                        modifier=Modifier.fillMaxWidth().height(58.dp)) {
+                        Icon(Icons.Default.Groups,contentDescription=null)
+                        Spacer(Modifier.width(10.dp))
+                        Text("Manage Community Residents",fontWeight=FontWeight.Bold)
                     }
                     Button(onClick={showCreate=true},enabled=canManage,
                         modifier=Modifier.fillMaxWidth().height(58.dp),
