@@ -1,5 +1,11 @@
 package com.clubhouselinks.android
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.util.Base64
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -13,6 +19,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -23,6 +30,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.*
@@ -42,6 +52,48 @@ private fun eventTime(raw:String):ZonedDateTime?=try{Instant.parse(raw).atZone(Z
     }
 }
 private fun JSONObject.eventInstant():ZonedDateTime?=eventTime(eText("starts_at"))
+
+// Read the selected photo on a background dispatcher and downsample it before
+// sending it to the existing HOA Board API (image_base64). Avoid uploading an
+// unbounded full-resolution camera image through Express JSON.
+private suspend fun eventPhotoBase64(context:android.content.Context,uri:Uri):String =
+    withContext(Dispatchers.IO) {
+        val bounds=BitmapFactory.Options().apply{inJustDecodeBounds=true}
+        context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it,null,bounds) }
+            ?: throw IllegalArgumentException("Unable to open selected photo.")
+        require(bounds.outWidth>0 && bounds.outHeight>0){"Invalid event photo."}
+        var sample=1
+        while(bounds.outWidth/sample>1600 || bounds.outHeight/sample>1600) sample*=2
+        val options=BitmapFactory.Options().apply{inSampleSize=sample}
+        val decoded=context.contentResolver.openInputStream(uri)?.use {
+            BitmapFactory.decodeStream(it,null,options)
+        } ?: throw IllegalArgumentException("Unable to decode selected photo.")
+        val maxSide=maxOf(decoded.width,decoded.height)
+        val scaled=if(maxSide>1200) {
+            val ratio=1200f/maxSide
+            Bitmap.createScaledBitmap(decoded,(decoded.width*ratio).toInt().coerceAtLeast(1),
+                (decoded.height*ratio).toInt().coerceAtLeast(1),true)
+        }else decoded
+        val bytes=ByteArrayOutputStream().use { out ->
+            check(scaled.compress(Bitmap.CompressFormat.JPEG,78,out)){"Photo encoding failed."}
+            out.toByteArray()
+        }
+        if(scaled!==decoded)scaled.recycle()
+        decoded.recycle()
+        require(bytes.size<=3_000_000){"Event photo is too large. Choose a smaller image."}
+        Base64.encodeToString(bytes,Base64.NO_WRAP)
+    }
+
+@Composable
+private fun EventPhoto(event:JSONObject) {
+    val url=event.eText("image_url")
+    if(url.startsWith("https://")) {
+        AsyncImage(model=url,contentDescription="Photo for ${event.eText("title")}",
+            modifier=Modifier.fillMaxWidth().height(205.dp)
+                .clip(RoundedCornerShape(16.dp)),contentScale=ContentScale.Crop)
+    }
+}
+
 
 @Composable
 fun ResidentParityEvents(session:AccountSession,readOnly:Boolean=false){
@@ -193,12 +245,7 @@ fun ResidentParityEvents(session:AccountSession,readOnly:Boolean=false){
             color=Color.White.copy(alpha=0.8f))}}
         items(shown,key={"${it.eText("event_source")}-${it.optInt("id")}"}){event->
             EventPanel{
-                val url=event.eText("image_url")
-                if(url.startsWith("https://")){
-                    AsyncImage(model=url,contentDescription=event.eText("title"),
-                        modifier=Modifier.fillMaxWidth().height(178.dp)
-                            .clip(RoundedCornerShape(15.dp)),contentScale=ContentScale.Crop)
-                }
+                EventPhoto(event)
                 Text(event.eText("title").ifBlank{"Community Event"},
                     style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
                 event.eventInstant()?.let{Text(it.format(DateTimeFormatter.ofPattern("EEE, MMM d · h:mm a")),
@@ -211,8 +258,19 @@ fun ResidentParityEvents(session:AccountSession,readOnly:Boolean=false){
             item{Text("Past Events",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)}
             items(past,key={"${it.eText("event_source")}-${it.optInt("id")}-past"}){event->
                 EventPanel{
-                    Text(event.eText("title"),fontWeight=FontWeight.Bold)
-                    Text(event.eventInstant()?.format(DateTimeFormatter.ofPattern("MMM d, yyyy")).orEmpty())
+                    EventPhoto(event)
+                    Row(verticalAlignment=Alignment.CenterVertically) {
+                        Text(event.eText("title").ifBlank{"Community Event"},
+                            fontWeight=FontWeight.Bold,style=MaterialTheme.typography.titleLarge,
+                            modifier=Modifier.weight(1f))
+                        Text("Completed",color=Color.LightGray)
+                    }
+                    Text(event.eText("address"),color=Color.White.copy(alpha=0.8f))
+                    Text(event.eventInstant()?.format(
+                        DateTimeFormatter.ofPattern("EEE, MMM d, yyyy · h:mm a")).orEmpty(),
+                        color=eventCyan)
+                    if(event.eText("description").isNotBlank())
+                        Text(event.eText("description"),color=Color.White.copy(alpha=0.85f))
                 }
             }
         }
@@ -243,6 +301,11 @@ private fun HoaEventPublishForm(
     var saving by remember{mutableStateOf(false)}
     var error by remember{mutableStateOf("")}
     val scope=rememberCoroutineScope()
+    val context=LocalContext.current
+    var selectedPhoto by remember { mutableStateOf<Uri?>(null) }
+    val photoPicker=rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        selectedPhoto=uri
+    }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
         .background(Brush.verticalGradient(listOf(Color(0xFF003341),Color(0xFF281039))))
         .padding(18.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
@@ -263,8 +326,24 @@ private fun HoaEventPublishForm(
             modifier=Modifier.fillMaxWidth())
         OutlinedTextField(endTime,{endTime=it},label={Text("End 24-hour HH:MM")},
             modifier=Modifier.fillMaxWidth())
-        Text("Photo upload is not yet available on Android. Use iOS for event photos.",
-            color=Color.LightGray,style=MaterialTheme.typography.bodySmall)
+        Text("Event photo (optional)",style=MaterialTheme.typography.titleMedium,
+            color=Color.White,fontWeight=FontWeight.Bold)
+        selectedPhoto?.let { uri ->
+            AsyncImage(model=uri,contentDescription="Selected event photo",
+                modifier=Modifier.fillMaxWidth().height(210.dp).clip(RoundedCornerShape(16.dp)),
+                contentScale=ContentScale.Crop)
+        }
+        Row(horizontalArrangement=Arrangement.spacedBy(8.dp),
+            verticalAlignment=Alignment.CenterVertically) {
+            OutlinedButton(onClick={photoPicker.launch("image/*")},enabled=!saving) {
+                Icon(Icons.Default.AddPhotoAlternate,contentDescription=null)
+                Spacer(Modifier.width(6.dp))
+                Text(if(selectedPhoto==null)"Choose Event Photo" else "Change Photo")
+            }
+            if(selectedPhoto!=null)TextButton(onClick={selectedPhoto=null},enabled=!saving) {
+                Text("Remove")
+            }
+        }
         if(error.isNotBlank())Text(error,color=MaterialTheme.colorScheme.error)
         Button(
             modifier=Modifier.fillMaxWidth(),enabled=!saving && title.isNotBlank(),
@@ -286,6 +365,7 @@ private fun HoaEventPublishForm(
                             .put("starts_at",starts.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
                             .put("ends_at",ends.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
                             .put("publish",true)
+                        selectedPhoto?.let { body.put("image_base64",eventPhotoBase64(context,it)) }
                         ClubhouseApi.createBoardEvent(residentId,body)
                         onPublished()
                     }catch(e:Exception){error=e.message ?: "Unable to publish event"}
