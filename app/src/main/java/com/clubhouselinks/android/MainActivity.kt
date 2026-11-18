@@ -211,6 +211,13 @@ private fun ClubhouseNavigation(
                 "Services" -> ServicesScreen(session, onPage, readOnly = supportModeActive)
                 "Requests" -> RequestsScreen(session, onPage, readOnly = supportModeActive)
                 "Street Fair" -> StreetFairScreen(session, onPage)
+                "Support Signup" -> if (BuildConfig.DEBUG && vendorSession.isVendor) {
+                    ResidentSignupWizard(
+                        supportTestMode = true,
+                        onResidentCreated = onSupportSelected,
+                        onCancel = { onPage("Home") }
+                    )
+                } else NativeHome(session, onPage)
                 "Support Search" -> if (BuildConfig.DEBUG && vendorSession.isVendor) {
                     SupportResidentScreen(
                         vendor=vendorSession,
