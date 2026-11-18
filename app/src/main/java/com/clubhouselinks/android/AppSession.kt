@@ -7,7 +7,8 @@ data class AccountSession(
     val residentId: Int = 0,
     val vendorId: Int = 0,
     val displayName: String = "",
-    val neighborhoodName: String = ""
+    val neighborhoodName: String = "",
+    val boardAccessToken: String = ""
 ) {
     val isResident get() = accountType == "resident" && residentId > 0
     val isVendor get() = accountType == "vendor" && vendorId > 0
@@ -20,12 +21,14 @@ class SessionStore(private val context: Context) {
         prefs.getInt("residentId", 0),
         prefs.getInt("vendorId", 0),
         prefs.getString("name", "") ?: "",
-        prefs.getString("neighborhood", "") ?: ""
+        prefs.getString("neighborhood", "") ?: "",
+        prefs.getString("boardAccessToken", "") ?: ""
     )
     fun save(session: AccountSession) {
         prefs.edit().putString("type", session.accountType)
             .putInt("residentId", session.residentId).putInt("vendorId", session.vendorId)
-            .putString("name", session.displayName).putString("neighborhood", session.neighborhoodName).apply()
+            .putString("name", session.displayName).putString("neighborhood", session.neighborhoodName)
+            .putString("boardAccessToken", session.boardAccessToken).apply()
     }
     fun clear() = prefs.edit().clear().apply()
 }
